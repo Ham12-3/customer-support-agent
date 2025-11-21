@@ -1,0 +1,96 @@
+# ============================================
+# SENSITIVE FILES - NEVER COMMIT THESE!
+# ============================================
+
+# Configuration files with secrets
+**/appsettings.json
+**/appsettings.Development.json
+**/appsettings.Staging.json
+**/appsettings.Production.json
+!**/appsettings.Example.json
+**/appsettings.*.json
+
+# Environment variables
+**/.env
+**/.env.*
+!**/.env.example
+
+# User secrets
+**/secrets.json
+**/*.secrets.json
+
+# API Keys and certificates
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx
+
+# ============================================
+# USER GENERATED CONTENT
+# ============================================
+
+# Uploaded files
+**/uploads/
+**/wwwroot/uploads/
+backend/src/CustomerSupport.Api/uploads/
+frontend/apps/dashboard/public/uploads/
+
+# Temporary files
+**/temp/
+**/tmp/
+
+# ============================================
+# LOGS AND DEBUGGING
+# ============================================
+
+# Application logs
+**/logs/
+**/*.log
+**/log-*.txt
+backend/src/CustomerSupport.Api/logs/
+
+# Debug files
+**/*.stackdump
+
+# ============================================
+# DATABASE FILES
+# ============================================
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.mdf
+*.ldf
+*.sqlite*
+*.bak
+
+# ============================================
+# BUILD ARTIFACTS
+# ============================================
+
+# .NET
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.user
+*.suo
+*.cache
+.vs/
+
+# Node/Frontend
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+out/
+.cache/
+
+# Package managers
+pnpm-lock.yaml  # Optional - team preference
+package-lock.json  # Optional - team preference
+yarn.lock  # Optional - team preference
