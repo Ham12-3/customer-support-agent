@@ -126,28 +126,48 @@ if (!string.IsNullOrEmpty(redisConnection))
     });
 }
 builder.Services.AddSingleton<IGeminiService, GeminiService>();
+
+// Register DbSeeder
+builder.Services.AddScoped<DbSeeder>();
+
 var app = builder.Build();
 
-// Apply database migrations automatically in development
-// DISABLED: Database is already set up manually
-// if (app.Environment.IsDevelopment())
-// {
-//     using (var scope = app.Services.CreateScope())
-//     {
-//         var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-//         try
-//         {
-//             Log.Information("Applying database migrations...");
-//             dbContext.Database.Migrate();
-//             Log.Information("Database migrations applied successfully!");
-//         }
-//         catch (Exception ex)
-//         {
-//             Log.Error(ex, "An error occurred while applying database migrations");
-//             throw;
-//         }
-//     }
-// }
+// Seed database in development environment
+if (app.Environment.IsDevelopment())
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        try
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<DbSeeder>>();
+            var seeder = new DbSeeder(dbContext, logger);
+            
+            // Check if --seed-db argument is passed
+            var seedDb = args.Contains("--seed-db");
+            
+            if (seedDb)
+            {
+                Log.Information("Seeding database with test data...");
+                await seeder.SeedAsync();
+            }
+            else
+            {
+                // Just check if database is empty and notify user
+                var hasUsers = await dbContext.Users.AnyAsync();
+                if (!hasUsers)
+                {
+                    Log.Warning("⚠️  Database is empty! Run with '--seed-db' argument to add test users.");
+                    Log.Information("💡 Or register via: POST /api/auth/register");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Error(ex, "An error occurred during database operations");
+        }
+    }
+}
 
 // Configure the HTTP request pipeline
 if (app.Environment.IsDevelopment())
