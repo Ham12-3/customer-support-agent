@@ -5,7 +5,7 @@
 ### 🚨 **URGENT: Remove API Key from appsettings.json**
 
 The file `backend/src/CustomerSupport.Api/appsettings.json` contains:
-- **Gemini API Key**: `AIzaSyDHd1cPWuu_9I_OBkyoRkyEasyVfoKQojQ` ⚠️ **EXPOSED**
+- **Gemini API Key**: `[REDACTED - REMOVED FOR SECURITY]` ⚠️ **DO NOT COMMIT**
 - JWT Secret (temporary, but should be removed)
 - Database connection string with password
 
