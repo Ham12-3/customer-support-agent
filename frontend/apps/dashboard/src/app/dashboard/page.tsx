@@ -1,248 +1,413 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
+import LuxuryLayout from '@/components/LuxuryLayout';
+import { LuxuryCard } from '@/components/ui/LuxuryCard';
+import { RecentConversations } from '@/components/dashboard/RecentConversations';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { RefreshControl } from '@/components/dashboard/RefreshControl';
+import { TimeRangeSelector, TimeRange } from '@/components/dashboard/TimeRangeSelector';
 import { 
+  Users, 
   MessageSquare, 
+  Zap, 
+  ArrowUpRight, 
+  ArrowDownRight,
   Globe, 
-  BookOpen, 
-  TrendingUp, 
-  Users,
-  Zap,
-  ArrowRight,
   Clock,
-  CheckCircle2
+  MoreHorizontal
 } from 'lucide-react';
-import { useAuthStore } from '@/store/authStore';
-import GlassmorphismLayout from '@/components/GlassmorphismLayout';
-import { StatCard } from '@/components/ui/StatCard';
-import { ModernCard } from '@/components/ui/ModernCard';
-import { api } from '@/lib/api';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
+import { api } from '@/lib/api';
+import { PageLoader } from '@/components/ui/LoadingSpinner';
+
+interface DashboardStats {
+  totalConversations: number;
+  activeAgents: number;
+  averageResponseTimeSeconds: number;
+  conversationsChangePercent: number;
+  responseTimeChangePercent: number;
+  agentsChangePercent: number;
+}
+
+interface AnalyticsData {
+  dailyData: Array<{ name: string; value: number }>;
+}
+
+interface SystemHealth {
+  apiLatencyMs: number;
+  databaseLoadPercent: number;
+  memoryUsagePercent: number;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, user } = useAuthStore();
-  const [stats, setStats] = useState({
-    conversations: 0,
-    domains: 0,
-    documents: 0,
-    activeUsers: 0,
-  });
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [domains, setDomains] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userName, setUserName] = useState('User');
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [timeRange, setTimeRange] = useState<TimeRange>('7d');
 
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/login');
-    } else {
-      loadStats();
-    }
-  }, [isAuthenticated, router]);
-
-  const loadStats = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
-      const domainsData = await api.domains.getAll();
-      setStats((prev) => ({ 
-        ...prev, 
-        domains: domainsData.items?.length || 0,
-        conversations: Math.floor(Math.random() * 1000), // Demo data
-        documents: Math.floor(Math.random() * 50),
-        activeUsers: Math.floor(Math.random() * 100),
-      }));
+      // Use Promise.allSettled to prevent one failure from breaking everything
+      const results = await Promise.allSettled([
+        api.dashboard.getStats().catch(() => null),
+        api.dashboard.getAnalytics().catch(() => null),
+        api.dashboard.getSystemHealth().catch(() => null),
+        api.users.getProfile().catch(() => ({ fullName: 'User' })),
+        api.domains.getAll().catch(() => ({ items: [] }))
+      ]);
+
+      // Only set data if requests succeeded
+      if (results[0].status === 'fulfilled' && results[0].value) {
+        setStats(results[0].value);
+      }
+      if (results[1].status === 'fulfilled' && results[1].value) {
+        setAnalytics(results[1].value);
+      }
+      if (results[2].status === 'fulfilled' && results[2].value) {
+        setHealth(results[2].value);
+      }
+      if (results[3].status === 'fulfilled' && results[3].value) {
+        setUserName(results[3].value.fullName?.split(' ')[0] || 'User');
+      }
+      if (results[4].status === 'fulfilled' && results[4].value) {
+        setDomains(results[4].value.items?.slice(0, 3) || []);
+      }
+
+      setLastUpdated(new Date());
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      console.error('Error loading dashboard data:', error);
+      // Don't redirect on error - let API interceptor handle auth errors
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    loadDashboardData();
+  }, [loadDashboardData]);
+
+  if (loading) return <PageLoader />;
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  if (!isAuthenticated || loading) {
-    return null;
-  }
-
-  const quickActions = [
-    {
-      title: 'Add Domain',
-      description: 'Connect a new website',
-      icon: Globe,
-      href: '/dashboard/domains',
-      color: 'from-blue-500 to-cyan-500',
-    },
-    {
-      title: 'Upload Documents',
-      description: 'Expand knowledge base',
-      icon: BookOpen,
-      href: '/dashboard/knowledge-base',
-      color: 'from-purple-500 to-pink-500',
-    },
-    {
-      title: 'View Conversations',
-      description: 'Check customer chats',
+  const statsData = [
+    { 
+      label: 'Total Conversations', 
+      value: stats?.totalConversations.toLocaleString() || '0', 
+      change: `${(stats?.conversationsChangePercent || 0) > 0 ? '+' : ''}${(stats?.conversationsChangePercent || 0).toFixed(1)}%`, 
       icon: MessageSquare,
-      href: '/dashboard/conversations',
-      color: 'from-green-500 to-emerald-500',
+      isPositive: (stats?.conversationsChangePercent || 0) >= 0,
+      onClick: () => router.push('/dashboard/conversations'),
+    },
+    { 
+      label: 'Active Agents', 
+      value: stats?.activeAgents.toString() || '0', 
+      change: `${(stats?.agentsChangePercent || 0) > 0 ? '+' : ''}${(stats?.agentsChangePercent || 0).toFixed(0)}`, 
+      icon: Users,
+      isPositive: (stats?.agentsChangePercent || 0) >= 0,
+      onClick: () => router.push('/dashboard/agents'),
+    },
+    { 
+      label: 'Avg. Response Time', 
+      value: `${stats?.averageResponseTimeSeconds.toFixed(1) || '0'}s`, 
+      change: `${(stats?.responseTimeChangePercent || 0).toFixed(1)}%`, 
+      icon: Clock,
+      isPositive: (stats?.responseTimeChangePercent || 0) < 0, // Negative is good for response time
+      onClick: () => router.push('/dashboard/analytics'),
     },
   ];
 
   return (
-    <GlassmorphismLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
+    <LuxuryLayout>
+      <div className="space-y-8">
         {/* Welcome Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 dark:from-white dark:via-primary-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
-            Welcome back, {user?.firstName}! 👋
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Here's what's happening with your customer support system today.
-          </p>
-        </motion.div>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div>
+            <motion.h1 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-4xl font-bold text-white mb-2"
+            >
+              {getGreeting()}, {userName}
+            </motion.h1>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-gray-400"
+            >
+              Here&apos;s what&apos;s happening with your agents today.
+            </motion.p>
+          </div>
+          <motion.button
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.2 }}
+            onClick={() => router.push('/dashboard/domains')}
+            className="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium shadow-glow-md transition-all flex items-center gap-2"
+          >
+            <Zap className="w-4 h-4" />
+            <span>Create Agent</span>
+          </motion.button>
+        </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Total Conversations"
-            value={stats.conversations}
-            icon={<MessageSquare className="w-6 h-6" />}
-            trend={12.5}
-            color="blue"
-            delay={0}
-          />
-          <StatCard
-            title="Connected Domains"
-            value={stats.domains}
-            icon={<Globe className="w-6 h-6" />}
-            trend={5.2}
-            color="green"
-            delay={0.1}
-          />
-          <StatCard
-            title="Knowledge Base"
-            value={stats.documents}
-            icon={<BookOpen className="w-6 h-6" />}
-            trend={8.1}
-            color="purple"
-            delay={0.2}
-          />
-          <StatCard
-            title="Active Users"
-            value={stats.activeUsers}
-            icon={<Users className="w-6 h-6" />}
-            trend={-2.4}
-            color="orange"
-            delay={0.3}
-          />
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
-            <Zap className="w-6 h-6 text-primary-500" />
-            Quick Actions
-          </h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {quickActions.map((action, index) => {
-              const Icon = action.icon;
-              return (
-                <Link key={action.href} href={action.href}>
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 + index * 0.1 }}
-                    whileHover={{ y: -4, scale: 1.02 }}
-                    className={cn(
-                      'group relative overflow-hidden',
-                      'bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl',
-                      'border border-gray-200/50 dark:border-gray-700/50',
-                      'rounded-2xl p-6',
-                      'shadow-soft hover:shadow-hard',
-                      'transition-all duration-300',
-                      'cursor-pointer'
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {statsData.map((stat, index) => (
+            <motion.div
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 + index * 0.1 }}
+            >
+              <LuxuryCard
+                onClick={stat.onClick}
+                className="cursor-pointer hover:scale-[1.02] transition-transform"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="p-3 bg-white/[0.03] rounded-xl">
+                    <stat.icon className="w-6 h-6 text-primary-400" />
+                  </div>
+                  <span className={cn(
+                    "flex items-center gap-1 text-sm px-2 py-1 rounded-lg",
+                    stat.isPositive 
+                      ? "text-green-400 bg-green-400/10" 
+                      : "text-red-400 bg-red-400/10"
+                  )}>
+                    {stat.isPositive ? (
+                      <ArrowUpRight className="w-3 h-3" />
+                    ) : (
+                      <ArrowDownRight className="w-3 h-3" />
                     )}
-                  >
-                    <div className={cn(
-                      'absolute top-0 right-0 w-32 h-32 bg-gradient-to-br opacity-10 rounded-bl-full',
-                      action.color
-                    )} />
-                    
-                    <div className="relative z-10">
-                      <div className={cn(
-                        'w-12 h-12 rounded-xl bg-gradient-to-br flex items-center justify-center mb-4',
-                        action.color,
-                        'shadow-lg group-hover:scale-110 transition-transform duration-300'
-                      )}>
-                        <Icon className="w-6 h-6 text-white" />
-                      </div>
-                      
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">
-                        {action.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                        {action.description}
-                      </p>
-                      
-                      <div className="flex items-center text-primary-600 dark:text-primary-400 font-medium text-sm group-hover:gap-2 transition-all">
-                        Get Started
-                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                      </div>
-                    </div>
-                  </motion.div>
-                </Link>
-              );
-            })}
-          </div>
+                    {stat.change}
+                  </span>
+                </div>
+                <h3 className="text-3xl font-bold text-white mb-1">{stat.value}</h3>
+                <p className="text-gray-500 text-sm">{stat.label}</p>
+              </LuxuryCard>
+            </motion.div>
+          ))}
         </div>
 
-        {/* Organization Card */}
+        {/* Main Chart Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
+          transition={{ delay: 0.4 }}
         >
-          <ModernCard variant="glass" className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
-                  <span className="text-2xl font-bold text-white">
-                    {user?.tenantName?.charAt(0) || 'C'}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-                    Your Organization
-                  </p>
-                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {user?.tenantName}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-1 bg-primary-500/20 text-primary-700 dark:text-primary-300 rounded-full text-xs font-medium">
-                      {user?.role}
-                    </span>
-                    <span className="px-2 py-1 bg-green-500/20 text-green-700 dark:text-green-300 rounded-full text-xs font-medium flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" />
-                      Active
-                    </span>
-                  </div>
-                </div>
+          <LuxuryCard className="h-[400px]">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-lg font-semibold text-white">Analytics Overview</h3>
+                <p className="text-sm text-gray-500">
+                  Message volume over the last {timeRange === '7d' ? '7' : timeRange === '30d' ? '30' : '90'} days
+                </p>
               </div>
-              
-              <div className="text-right">
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">
-                  Pro Plan
-                </p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Unlimited access
-                </p>
+              <div className="flex items-center gap-3">
+                <RefreshControl
+                  onRefresh={loadDashboardData}
+                  autoRefreshInterval={30}
+                  lastUpdated={lastUpdated || undefined}
+                />
+                <TimeRangeSelector value={timeRange} onChange={setTimeRange} />
               </div>
             </div>
-          </ModernCard>
+            <div className="h-[300px] w-full">
+              {analytics && analytics.dailyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analytics.dailyData}>
+                    <defs>
+                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="#6b7280" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                    />
+                    <YAxis 
+                      stroke="#6b7280" 
+                      fontSize={12} 
+                      tickLine={false} 
+                      axisLine={false} 
+                      tickFormatter={(value) => `${value}`} 
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: '#121218', 
+                        border: '1px solid rgba(255,255,255,0.1)', 
+                        borderRadius: '12px',
+                        color: '#fff' 
+                      }} 
+                      itemStyle={{ color: '#fff' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="#4F46E5" 
+                      strokeWidth={3} 
+                      fillOpacity={1} 
+                      fill="url(#colorValue)" 
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  No analytics data available
+                </div>
+              )}
+            </div>
+          </LuxuryCard>
         </motion.div>
+
+        {/* Quick Actions and Recent Conversations */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <QuickActions />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <RecentConversations limit={5} />
+          </motion.div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Active Domains */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            <LuxuryCard>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-semibold text-white">Active Domains</h3>
+                {domains.length > 0 && (
+                  <button
+                    onClick={() => router.push('/dashboard/domains')}
+                    className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
+              <div className="space-y-4">
+                {domains.length > 0 ? (
+                  domains.map((domain, i) => (
+                    <div 
+                      key={domain.id || i} 
+                      onClick={() => router.push(`/dashboard/domains/${domain.id}`)}
+                      className="flex items-center justify-between p-4 rounded-2xl bg-white/[0.02] border border-white/[0.02] hover:bg-white/[0.04] transition-colors group cursor-pointer"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary-500/10 rounded-lg text-primary-400">
+                          <Globe className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-white">{domain.domainUrl}</p>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <div className={cn(
+                              "w-1.5 h-1.5 rounded-full",
+                              domain.isVerified || domain.status === 'Active' ? 'bg-green-500' : 'bg-yellow-500'
+                            )} />
+                            <p className="text-xs text-gray-500">
+                              {domain.isVerified || domain.status === 'Active' ? 'Operational' : 'Pending'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <span className="text-xs font-mono text-gray-500 group-hover:text-primary-400 transition-colors">
+                        {Math.floor(Math.random() * 100) + 50}ms
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <Globe className="w-12 h-12 mx-auto mb-2 opacity-20" />
+                    <p className="text-sm mb-4">No domains configured yet</p>
+                    <button
+                      onClick={() => router.push('/dashboard/domains')}
+                      className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Add Domain
+                    </button>
+                  </div>
+                )}
+              </div>
+            </LuxuryCard>
+          </motion.div>
+
+          {/* System Status */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <LuxuryCard>
+              <h3 className="text-lg font-semibold text-white mb-6">System Health</h3>
+              <div className="space-y-6">
+                {health && [
+                  { label: 'API Latency', value: Math.min(health.apiLatencyMs, 100), color: 'bg-green-500', unit: 'ms' },
+                  { label: 'Database Load', value: health.databaseLoadPercent, color: 'bg-primary-500', unit: '%' },
+                  { label: 'Memory Usage', value: health.memoryUsagePercent, color: 'bg-purple-500', unit: '%' },
+                ].map((metric, i) => (
+                  <div key={i}>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-sm text-gray-400">{metric.label}</span>
+                      <span className="text-sm font-medium text-white">
+                        {metric.label === 'API Latency' ? `${health.apiLatencyMs.toFixed(0)}ms` : `${metric.value.toFixed(0)}%`}
+                      </span>
+                    </div>
+                    <div className="h-2 w-full bg-white/[0.05] rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${metric.value}%` }}
+                        transition={{ duration: 1, delay: 0.8 + i * 0.1 }}
+                        className={cn("h-full rounded-full", metric.color)} 
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </LuxuryCard>
+          </motion.div>
+        </div>
       </div>
-    </GlassmorphismLayout>
+    </LuxuryLayout>
   );
 }

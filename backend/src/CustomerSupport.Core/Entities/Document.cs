@@ -8,6 +8,9 @@ namespace CustomerSupport.Core.Entities;
 public class Document : BaseEntity
 {
     public Guid TenantId { get; set; }
+    
+    // Link document to specific domain (null = available to all tenant domains)
+    public Guid? DomainId { get; set; }
 
     public string Title { get; set; } = string.Empty;
 
@@ -31,6 +34,7 @@ public class Document : BaseEntity
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
+    public Domain? Domain { get; set; }
     public ICollection<DocumentChunk> Chunks { get; set; } = new List<DocumentChunk>();
 }
 

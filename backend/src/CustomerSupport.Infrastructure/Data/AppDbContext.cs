@@ -20,6 +20,7 @@ public class AppDbContext : DbContext
     public DbSet<Message> Messages { get; set; } = null!;
     public DbSet<Document> Documents { get; set; } = null!;
     public DbSet<DocumentChunk> DocumentChunks { get; set; } = null!;
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -16,4 +16,9 @@ public interface IDomainRepository : IRepository<Domain>
     /// Gets a domain by its API key
     /// </summary>
     Task<Domain?> GetByApiKeyAsync(string apiKey);
+
+    /// <summary>
+    /// Returns domains pending verification that are ready for another attempt.
+    /// </summary>
+    Task<IEnumerable<Domain>> GetPendingVerificationAsync(int batchSize, CancellationToken cancellationToken = default);
 }

@@ -16,11 +16,12 @@ public class UnitOfWork : IUnitOfWork
     // Lazy initialization of repositories
     private ITenantRepository? _tenants;
     private IUserRepository? _users;
-   private IDomainRepository? _domains;
+    private IDomainRepository? _domains;
     private IRepository<Core.Entities.Conversation>? _conversations;
     private IRepository<Core.Entities.Message>? _messages;
     private IRepository<Core.Entities.Document>? _documents;
     private IRepository<Core.Entities.DocumentChunk>? _documentChunks;
+    private IRefreshTokenRepository? _refreshTokens;
 
     public UnitOfWork(AppDbContext context)
     {
@@ -35,7 +36,7 @@ public class UnitOfWork : IUnitOfWork
         _users ??= new UserRepository(_context);
 
     public IDomainRepository Domains =>
-       _domains ??= new DomainRepository(_context);
+        _domains ??= new DomainRepository(_context);
 
     public IRepository<Core.Entities.Conversation> Conversations =>
         _conversations ??= new Repository<Core.Entities.Conversation>(_context);
@@ -48,6 +49,9 @@ public class UnitOfWork : IUnitOfWork
 
     public IRepository<Core.Entities.DocumentChunk> DocumentChunks =>
         _documentChunks ??= new Repository<Core.Entities.DocumentChunk>(_context);
+
+    public IRefreshTokenRepository RefreshTokens =>
+        _refreshTokens ??= new RefreshTokenRepository(_context);
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {

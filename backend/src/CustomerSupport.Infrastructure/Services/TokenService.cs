@@ -60,6 +60,14 @@ public class TokenService : ITokenService
         return Convert.ToBase64String(randomBytes);
     }
 
+    public string HashToken(string token)
+    {
+        using var sha256 = SHA256.Create();
+        var bytes = Encoding.UTF8.GetBytes(token);
+        var hash = sha256.ComputeHash(bytes);
+        return Convert.ToHexString(hash);
+    }
+
     public Task<bool> ValidateTokenAsync(string token, CancellationToken cancellationToken = default)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
@@ -87,6 +95,38 @@ public class TokenService : ITokenService
         catch
         {
             return Task.FromResult(false);
+        }
+    }
+
+    public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var secretKey = _configuration["JWT:Secret"] 
+            ?? throw new InvalidOperationException("JWT Secret is not configured");
+        
+        var key = Encoding.UTF8.GetBytes(secretKey);
+
+        try
+        {
+            // Validate token but ignore expiration
+            var validationParameters = new TokenValidationParameters
+            {
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ValidateIssuer = true,
+                ValidIssuer = _configuration["JWT:Issuer"],
+                ValidateAudience = true,
+                ValidAudience = _configuration["JWT:Audience"],
+                ValidateLifetime = false, // Don't validate expiration
+                ClockSkew = TimeSpan.Zero
+            };
+
+            var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+            return principal;
+        }
+        catch
+        {
+            return null;
         }
     }
 }

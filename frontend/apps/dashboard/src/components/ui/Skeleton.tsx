@@ -56,3 +56,56 @@ export function SkeletonStat() {
     </div>
   );
 }
+
+export function SkeletonText({ className }: { className?: string }) {
+  return <Skeleton variant="text" className={cn("w-full", className)} />;
+}
+
+export function SkeletonTable() {
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <Skeleton variant="rectangular" className="w-48 h-8" />
+        <Skeleton variant="rectangular" className="w-24 h-8" />
+      </div>
+      <div className="border rounded-lg border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} variant="text" className="w-1/4" />
+          ))}
+        </div>
+        {[1, 2, 3, 4, 5].map((row) => (
+          <div key={row} className="p-4 border-b border-gray-200 dark:border-gray-700 last:border-0 flex gap-4">
+            {[1, 2, 3, 4].map((col) => (
+              <Skeleton key={col} variant="text" className="w-1/4" />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function SkeletonDashboard() {
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton variant="text" className="w-64 h-8" />
+          <Skeleton variant="text" className="w-48" />
+        </div>
+        <Skeleton variant="rectangular" className="w-32 h-10" />
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <SkeletonStat />
+        <SkeletonStat />
+        <SkeletonStat />
+      </div>
+      <SkeletonCard />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    </div>
+  );
+}

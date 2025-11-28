@@ -14,10 +14,12 @@ namespace CustomerSupport.Api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ITokenService _tokenService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ITokenService tokenService)
     {
         _authService = authService;
+        _tokenService = tokenService;
     }
 
     /// <summary>
@@ -28,7 +30,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<AuthResponseDto>> Register([FromBody] RegisterDto dto)
     {
-        var result = await _authService.RegisterAsync(dto);
+        var result = await _authService.RegisterAsync(dto, GetClientIp());
 
         if (result.IsFailure)
         {
@@ -51,7 +53,7 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
     {
-        var result = await _authService.LoginAsync(dto);
+        var result = await _authService.LoginAsync(dto, GetClientIp());
 
         if (result.IsFailure)
         {
@@ -94,6 +96,64 @@ public class AuthController : ControllerBase
         }
 
         return Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Refresh access token using refresh token
+    /// </summary>
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AuthResponseDto>> Refresh([FromBody] RefreshTokenDto dto)
+    {
+        // Extract user ID from expired token in Authorization header
+        // We'll manually validate the token (ignoring expiration) to get user info
+        var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+        Guid userId = Guid.Empty;
+        
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer "))
+        {
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            var principal = _tokenService.GetPrincipalFromExpiredToken(token);
+            if (principal != null)
+            {
+                var userIdClaim = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+                if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var parsedUserId))
+                {
+                    userId = parsedUserId;
+                }
+            }
+        }
+        
+        // If we couldn't get user from token, return error
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Token refresh failed",
+                Detail = "Invalid or expired token. Please login again.",
+                Status = StatusCodes.Status401Unauthorized
+            });
+        }
+
+        var result = await _authService.RefreshTokenAsync(dto, userId, GetClientIp());
+
+        if (result.IsFailure)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Token refresh failed",
+                Detail = result.Error,
+                Status = StatusCodes.Status401Unauthorized
+            });
+        }
+
+        return Ok(result.Value);
+    }
+
+    private string? GetClientIp()
+    {
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
     }
 }
 

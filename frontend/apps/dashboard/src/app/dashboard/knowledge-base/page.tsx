@@ -11,12 +11,11 @@ import {
   Clock,
   AlertCircle,
   FileCheck,
-  Plus,
   Link2
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import GlassmorphismLayout from '@/components/GlassmorphismLayout';
-import { ModernCard } from '@/components/ui/ModernCard';
+import LuxuryLayout from '@/components/LuxuryLayout';
+import { LuxuryCard } from '@/components/ui/LuxuryCard';
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
@@ -148,31 +147,31 @@ export default function KnowledgeBasePage() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Processing':
-        return 'from-yellow-500 to-orange-500';
+        return 'bg-yellow-500/10 border-yellow-500/20';
       case 'Active':
       case 'Completed':
-        return 'from-green-500 to-emerald-500';
+        return 'bg-green-500/10 border-green-500/20';
       case 'Failed':
-        return 'from-red-500 to-rose-500';
+        return 'bg-red-500/10 border-red-500/20';
       default:
-        return 'from-gray-500 to-gray-600';
+        return 'bg-gray-500/10 border-gray-500/20';
     }
   };
 
   if (loading) return <PageLoader />;
 
   return (
-    <GlassmorphismLayout>
+    <LuxuryLayout>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 dark:from-white dark:via-primary-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Knowledge Base
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <p className="text-gray-400 text-lg">
             Upload documents to train your AI assistant
           </p>
         </motion.div>
@@ -183,16 +182,16 @@ export default function KnowledgeBasePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <ModernCard variant="glass" className="p-6">
+          <LuxuryCard className="p-6">
             <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl">
+              <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl shadow-glow-sm">
                 <Upload className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-semibold text-white">
                   Upload New Document
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Supported: PDF, DOCX, TXT, or web URLs
                 </p>
               </div>
@@ -207,8 +206,8 @@ export default function KnowledgeBasePage() {
                   'flex-1 py-3 px-4 rounded-xl font-medium transition-all',
                   'flex items-center justify-center gap-2',
                   uploadMode === 'file'
-                    ? 'bg-primary-500 text-white shadow-soft'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-primary-600 text-white shadow-glow-sm'
+                    : 'bg-white/[0.03] text-gray-400 hover:bg-white/[0.05]'
                 )}
               >
                 <FileText className="w-5 h-5" />
@@ -221,8 +220,8 @@ export default function KnowledgeBasePage() {
                   'flex-1 py-3 px-4 rounded-xl font-medium transition-all',
                   'flex items-center justify-center gap-2',
                   uploadMode === 'url'
-                    ? 'bg-primary-500 text-white shadow-soft'
-                    : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    ? 'bg-primary-600 text-white shadow-glow-sm'
+                    : 'bg-white/[0.03] text-gray-400 hover:bg-white/[0.05]'
                 )}
               >
                 <Link2 className="w-5 h-5" />
@@ -233,7 +232,7 @@ export default function KnowledgeBasePage() {
             <div className="space-y-4">
               {/* Title Input */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Document Title *
                 </label>
                 <input
@@ -243,10 +242,9 @@ export default function KnowledgeBasePage() {
                   placeholder="e.g., Product Manual, FAQ Guide"
                   className={cn(
                     'w-full px-4 py-3 rounded-xl',
-                    'bg-gray-50 dark:bg-gray-900/50',
-                    'border-2 border-gray-200 dark:border-gray-700',
-                    'focus:border-primary-500 dark:focus:border-primary-400',
-                    'focus:ring-2 focus:ring-primary-500/20',
+                    'bg-white/[0.03] border border-white/[0.05]',
+                    'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                    'text-white placeholder-gray-600',
                     'transition-all duration-200'
                   )}
                 />
@@ -261,7 +259,7 @@ export default function KnowledgeBasePage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: 20 }}
                   >
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
                       Upload File
                     </label>
                     <div className="flex items-center gap-3">
@@ -279,19 +277,19 @@ export default function KnowledgeBasePage() {
                           'flex-1 py-3 px-4 rounded-xl cursor-pointer transition-all',
                           'border-2 border-dashed',
                           selectedFile
-                            ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-                            : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 hover:border-primary-500'
+                            ? 'border-green-500/50 bg-green-500/5'
+                            : 'border-white/[0.1] bg-white/[0.02] hover:border-primary-500/50'
                         )}
                       >
                         <div className="flex items-center gap-3">
                           {selectedFile ? (
                             <>
-                              <FileCheck className="w-5 h-5 text-green-600" />
+                              <FileCheck className="w-5 h-5 text-green-400" />
                               <div className="flex-1">
-                                <p className="font-medium text-gray-900 dark:text-white">
+                                <p className="font-medium text-white">
                                   {selectedFile.name}
                                 </p>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
+                                <p className="text-sm text-gray-400">
                                   {formatFileSize(selectedFile.size)}
                                 </p>
                               </div>
@@ -299,7 +297,7 @@ export default function KnowledgeBasePage() {
                           ) : (
                             <>
                               <Upload className="w-5 h-5 text-gray-500" />
-                              <span className="text-gray-600 dark:text-gray-400">
+                              <span className="text-gray-400">
                                 Click to choose file
                               </span>
                             </>
@@ -315,7 +313,7 @@ export default function KnowledgeBasePage() {
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, x: -20 }}
                   >
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    <label className="block text-sm font-medium text-gray-400 mb-2">
                       Web URL
                     </label>
                     <input
@@ -325,10 +323,9 @@ export default function KnowledgeBasePage() {
                       placeholder="https://example.com/documentation"
                       className={cn(
                         'w-full px-4 py-3 rounded-xl',
-                        'bg-gray-50 dark:bg-gray-900/50',
-                        'border-2 border-gray-200 dark:border-gray-700',
-                        'focus:border-primary-500 dark:focus:border-primary-400',
-                        'focus:ring-2 focus:ring-primary-500/20',
+                        'bg-white/[0.03] border border-white/[0.05]',
+                        'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                        'text-white placeholder-gray-600',
                         'transition-all duration-200'
                       )}
                     />
@@ -344,9 +341,9 @@ export default function KnowledgeBasePage() {
                 disabled={uploading}
                 className={cn(
                   'w-full py-3 px-6 rounded-xl font-medium',
-                  'bg-gradient-to-r from-primary-500 to-purple-500',
-                  'hover:from-primary-600 hover:to-purple-600',
-                  'text-white shadow-soft hover:shadow-medium',
+                  'bg-gradient-to-r from-primary-600 to-purple-600',
+                  'hover:from-primary-500 hover:to-purple-500',
+                  'text-white shadow-glow-sm',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   'flex items-center justify-center gap-2'
@@ -365,12 +362,12 @@ export default function KnowledgeBasePage() {
                 )}
               </motion.button>
             </div>
-          </ModernCard>
+          </LuxuryCard>
         </motion.div>
 
         {/* Documents List */}
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
             <FileText className="w-6 h-6 text-primary-500" />
             Your Documents ({documents.length})
           </h2>
@@ -380,17 +377,17 @@ export default function KnowledgeBasePage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
             >
-              <ModernCard variant="soft" className="p-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <FileText className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+              <LuxuryCard className="p-12 text-center">
+                <div className="w-20 h-20 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-4 border border-white/[0.05]">
+                  <FileText className="w-10 h-10 text-gray-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-white mb-2">
                   No documents yet
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-400">
                   Upload your first document to train your AI! 📚
                 </p>
-              </ModernCard>
+              </LuxuryCard>
             </motion.div>
           ) : (
             documents.map((doc, index) => (
@@ -400,37 +397,36 @@ export default function KnowledgeBasePage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + index * 0.05 }}
               >
-                <ModernCard variant="glass" hover className="p-6 group">
+                <LuxuryCard className="p-6 group">
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
                       <div className={cn(
-                        'p-3 bg-gradient-to-br rounded-xl shadow-lg',
-                        'group-hover:scale-110 transition-transform',
+                        'p-3 rounded-xl shadow-lg border transition-colors',
                         getStatusColor(doc.status)
                       )}>
                         {getStatusIcon(doc.status)}
                       </div>
 
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        <h3 className="text-lg font-semibold text-white mb-2">
                           {doc.title}
                         </h3>
 
-                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+                        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm text-gray-400">
                           <div>
-                            <span className="font-medium">Type:</span>{' '}
+                            <span className="font-medium text-gray-500">Type:</span>{' '}
                             {doc.fileType?.toUpperCase() || 'Unknown'}
                           </div>
                           <div>
-                            <span className="font-medium">Size:</span>{' '}
+                            <span className="font-medium text-gray-500">Size:</span>{' '}
                             {formatFileSize(doc.fileSizeBytes)}
                           </div>
                           <div>
-                            <span className="font-medium">Chunks:</span>{' '}
+                            <span className="font-medium text-gray-500">Chunks:</span>{' '}
                             {doc.chunkCount}
                           </div>
                           <div>
-                            <span className="font-medium">Uploaded:</span>{' '}
+                            <span className="font-medium text-gray-500">Uploaded:</span>{' '}
                             {new Date(doc.createdAt).toLocaleDateString()}
                           </div>
                         </div>
@@ -441,7 +437,7 @@ export default function KnowledgeBasePage() {
                               href={doc.sourceUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-sm text-primary-600 dark:text-primary-400 hover:underline flex items-center gap-1"
+                              className="text-sm text-primary-400 hover:text-primary-300 hover:underline flex items-center gap-1"
                             >
                               <Globe className="w-3 h-3" />
                               {doc.sourceUrl}
@@ -450,7 +446,7 @@ export default function KnowledgeBasePage() {
                         )}
 
                         {doc.errorMessage && (
-                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-800 dark:text-red-300">
+                          <div className="mt-2 p-2 bg-red-500/10 border border-red-500/20 rounded-lg text-sm text-red-400">
                             <strong>Error:</strong> {doc.errorMessage}
                           </div>
                         )}
@@ -463,20 +459,20 @@ export default function KnowledgeBasePage() {
                       onClick={() => handleDelete(doc.id, doc.title)}
                       className={cn(
                         'p-2 rounded-xl',
-                        'bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30',
-                        'text-red-600 dark:text-red-400',
+                        'bg-red-500/10 hover:bg-red-500/20 border border-red-500/10',
+                        'text-red-400',
                         'transition-colors'
                       )}
                     >
                       <Trash2 className="w-5 h-5" />
                     </motion.button>
                   </div>
-                </ModernCard>
+                </LuxuryCard>
               </motion.div>
             ))
           )}
         </div>
       </div>
-    </GlassmorphismLayout>
+    </LuxuryLayout>
   );
 }

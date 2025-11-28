@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface LoadingSpinnerProps {
+export interface LoadingSpinnerProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
   className?: string;
   text?: string;
@@ -35,6 +35,18 @@ export function PageLoader() {
   return (
     <div className="fixed inset-0 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center z-50">
       <LoadingSpinner size="xl" text="Loading..." />
+    </div>
+  );
+}
+
+export function InlineSpinner({ className }: { className?: string }) {
+  return <LoadingSpinner size="sm" className={className} />;
+}
+
+export function LoadingOverlay({ text }: { text?: string }) {
+  return (
+    <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-[1px] flex items-center justify-center z-10 rounded-inherit">
+      <LoadingSpinner size="lg" text={text} />
     </div>
   );
 }

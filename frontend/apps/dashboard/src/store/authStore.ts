@@ -30,6 +30,8 @@ export const useAuthStore = create<AuthState>()(
         if (typeof window !== 'undefined') {
           localStorage.setItem('access_token', accessToken);
           localStorage.setItem('refresh_token', refreshToken);
+          // Also set as cookie for middleware
+          document.cookie = `access_token=${accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
         }
         
         set({
@@ -45,10 +47,12 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearAuth: () => {
-        // Clear from localStorage
+        // Clear from localStorage and cookies
         if (typeof window !== 'undefined') {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
+          // Clear cookie
+          document.cookie = 'access_token=; path=/; max-age=0';
         }
         
         set({
