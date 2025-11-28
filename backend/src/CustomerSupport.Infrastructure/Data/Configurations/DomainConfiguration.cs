@@ -41,6 +41,12 @@ public class DomainConfiguration : IEntityTypeConfiguration<Domain>
         builder.Property(d => d.WidgetConfig)
             .HasColumnType("jsonb");
 
+        builder.Property(d => d.VerificationAttempts)
+            .HasDefaultValue(0);
+
+        builder.Property(d => d.LastVerificationError)
+            .HasMaxLength(500);
+
         // Relationships
         builder.HasOne(d => d.Tenant)
             .WithMany(t => t.Domains)

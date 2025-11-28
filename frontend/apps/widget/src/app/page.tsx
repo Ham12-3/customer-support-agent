@@ -10,36 +10,48 @@ interface Message {
   timestamp: Date;
 }
 
+interface WidgetConfig {
+  apiKey?: string;
+  domain?: string;
+  apiUrl: string;
+}
+
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [config, setConfig] = useState<WidgetConfig | null>(null);
   const [sessionId, setSessionId] = useState<string>('');
+  const [configError, setConfigError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Get API key from URL params or data attribute
+    // Get config from URL params
     const params = new URLSearchParams(window.location.search);
-    const key = params.get('apiKey') || 
-                document.querySelector('script[data-api-key]')?.getAttribute('data-api-key');
+    const domain = params.get('domain');
+    const apiKey = params.get('apiKey');
+    const apiUrl = params.get('apiUrl') || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
     
-    if (key) {
-      setApiKey(key);
-      // Generate session ID
-      setSessionId(`session_${Date.now()}_${Math.random().toString(36).substring(7)}`);
-      
-      // Add welcome message
-      setMessages([
-        {
-          id: '1',
-          role: 'assistant',
-          content: 'Hello! How can I help you today?',
-          timestamp: new Date(),
-        },
-      ]);
+    if (!domain && !apiKey) {
+      setConfigError('Missing configuration. Please check your embed code.');
+      return;
     }
+    
+    setConfig({ domain: domain || undefined, apiKey: apiKey || undefined, apiUrl });
+    
+    // Generate session ID
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substring(7)}`);
+    
+    // Add welcome message
+    setMessages([
+      {
+        id: '1',
+        role: 'assistant',
+        content: 'Hello! How can I help you today?',
+        timestamp: new Date(),
+      },
+    ]);
   }, []);
 
   useEffect(() => {
@@ -51,7 +63,7 @@ export default function ChatWidget() {
   };
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !apiKey) return;
+    if (!inputValue.trim() || !config) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -65,20 +77,19 @@ export default function ChatWidget() {
     setIsLoading(true);
 
     try {
-      // TODO: Replace with actual API endpoint
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      
       const response = await axios.post(
-        `${API_URL}/api/chat`,
+        `${config.apiUrl}/api/chat`,
         {
           message: inputValue,
           sessionId,
-          apiKey,
+          domain: config.domain,
+          apiKey: config.apiKey,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            'X-API-Key': apiKey,
+            ...(config.apiKey ? { 'X-API-Key': config.apiKey } : {}),
+            ...(config.domain ? { 'X-Domain': config.domain } : {}),
           },
         }
       );
@@ -115,11 +126,19 @@ export default function ChatWidget() {
     }
   };
 
-  if (!apiKey) {
+  if (configError) {
     return (
       <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg shadow-lg">
         <p className="font-semibold">Configuration Error</p>
-        <p className="text-sm">Missing API key. Please check your embed code.</p>
+        <p className="text-sm">{configError}</p>
+      </div>
+    );
+  }
+
+  if (!config) {
+    return (
+      <div className="fixed bottom-4 right-4">
+        <div className="bg-gray-200 rounded-full p-4 shadow-lg animate-pulse w-16 h-16" />
       </div>
     );
   }

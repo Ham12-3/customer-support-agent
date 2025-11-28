@@ -19,6 +19,7 @@ public class UploadDocumentDto
 public class DocumentResponseDto
 {
     public Guid Id { get; set; }
+    public Guid? DomainId { get; set; }
     public string Title { get; set; } = string.Empty;
     public string? SourceUrl { get; set; }
     public string? FileType { get; set; }

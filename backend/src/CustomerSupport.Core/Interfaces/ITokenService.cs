@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using CustomerSupport.Core.Entities;
 
 namespace CustomerSupport.Core.Interfaces;
@@ -9,6 +10,8 @@ public interface ITokenService
 {
     string GenerateAccessToken(User user);
     string GenerateRefreshToken();
+    string HashToken(string token);
     Task<bool> ValidateTokenAsync(string token, CancellationToken cancellationToken = default);
+    ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
 }
 

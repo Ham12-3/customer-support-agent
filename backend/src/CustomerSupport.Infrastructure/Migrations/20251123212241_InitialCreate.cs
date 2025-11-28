@@ -1,8 +1,9 @@
+﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace CustomerSupport.Infrastructure.Data.Migrations
+namespace CustomerSupport.Infrastructure.Migrations
 {
     /// <inheritdoc />
     public partial class InitialCreate : Migration
@@ -10,7 +11,6 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Create tenants table
             migrationBuilder.CreateTable(
                 name: "tenants",
                 columns: table => new
@@ -28,63 +28,6 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                     table.PrimaryKey("PK_tenants", x => x.Id);
                 });
 
-            // Create users table
-            migrationBuilder.CreateTable(
-                name: "users",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    PasswordHash = table.Column<string>(type: "text", nullable: false),
-                    Role = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_users", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_users_tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "tenants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            // Create domains table
-            migrationBuilder.CreateTable(
-                name: "domains",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DomainUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    VerificationCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    IsVerified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    VerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ApiKey = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    WidgetConfig = table.Column<string>(type: "jsonb", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_domains", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_domains_tenants_TenantId",
-                        column: x => x.TenantId,
-                        principalTable: "tenants",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            // Create documents table
             migrationBuilder.CreateTable(
                 name: "documents",
                 columns: table => new
@@ -115,7 +58,90 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            // Create conversations table
+            migrationBuilder.CreateTable(
+                name: "domains",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DomainUrl = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    VerificationCode = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    IsVerified = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    VerifiedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApiKey = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    WidgetConfig = table.Column<string>(type: "jsonb", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_domains", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_domains_tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "users",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    TenantId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Email = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    FirstName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    LastName = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    PasswordHash = table.Column<string>(type: "text", nullable: false),
+                    Role = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    LastLoginAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Company = table.Column<string>(type: "text", nullable: true),
+                    JobRole = table.Column<string>(type: "text", nullable: true),
+                    Timezone = table.Column<string>(type: "text", nullable: true),
+                    AvatarUrl = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_users_tenants_TenantId",
+                        column: x => x.TenantId,
+                        principalTable: "tenants",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "document_chunks",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    ChunkIndex = table.Column<int>(type: "integer", nullable: false),
+                    StartPosition = table.Column<int>(type: "integer", nullable: false),
+                    EndPosition = table.Column<int>(type: "integer", nullable: false),
+                    VectorId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    Metadata = table.Column<string>(type: "jsonb", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_document_chunks", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_document_chunks_documents_DocumentId",
+                        column: x => x.DocumentId,
+                        principalTable: "documents",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateTable(
                 name: "conversations",
                 columns: table => new
@@ -159,34 +185,6 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.SetNull);
                 });
 
-            // Create document_chunks table
-            migrationBuilder.CreateTable(
-                name: "document_chunks",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DocumentId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Content = table.Column<string>(type: "text", nullable: false),
-                    ChunkIndex = table.Column<int>(type: "integer", nullable: false),
-                    StartPosition = table.Column<int>(type: "integer", nullable: false),
-                    EndPosition = table.Column<int>(type: "integer", nullable: false),
-                    VectorId = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    Metadata = table.Column<string>(type: "jsonb", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_document_chunks", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_document_chunks_documents_DocumentId",
-                        column: x => x.DocumentId,
-                        principalTable: "documents",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            // Create messages table
             migrationBuilder.CreateTable(
                 name: "messages",
                 columns: table => new
@@ -219,74 +217,6 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                         onDelete: ReferentialAction.SetNull);
                 });
 
-            // Create indexes for tenants
-            migrationBuilder.CreateIndex(
-                name: "idx_tenants_created_at",
-                table: "tenants",
-                column: "CreatedAt");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_tenants_email",
-                table: "tenants",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "idx_tenants_status",
-                table: "tenants",
-                column: "Status");
-
-            // Create indexes for users
-            migrationBuilder.CreateIndex(
-                name: "idx_users_email",
-                table: "users",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "idx_users_tenant_email",
-                table: "users",
-                columns: new[] { "TenantId", "Email" });
-
-            migrationBuilder.CreateIndex(
-                name: "idx_users_tenant_id",
-                table: "users",
-                column: "TenantId");
-
-            // Create indexes for domains
-            migrationBuilder.CreateIndex(
-                name: "idx_domains_api_key",
-                table: "domains",
-                column: "ApiKey",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "idx_domains_is_verified",
-                table: "domains",
-                column: "IsVerified");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_domains_tenant_id",
-                table: "domains",
-                column: "TenantId");
-
-            // Create indexes for documents
-            migrationBuilder.CreateIndex(
-                name: "idx_documents_content_hash",
-                table: "documents",
-                column: "ContentHash");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_documents_status",
-                table: "documents",
-                column: "Status");
-
-            migrationBuilder.CreateIndex(
-                name: "idx_documents_tenant_id",
-                table: "documents",
-                column: "TenantId");
-
-            // Create indexes for conversations
             migrationBuilder.CreateIndex(
                 name: "idx_conversations_created_at",
                 table: "conversations",
@@ -317,7 +247,6 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                 table: "conversations",
                 column: "AssignedAgentId");
 
-            // Create indexes for document_chunks
             migrationBuilder.CreateIndex(
                 name: "idx_document_chunks_document_id",
                 table: "document_chunks",
@@ -334,7 +263,37 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                 column: "VectorId",
                 unique: true);
 
-            // Create indexes for messages
+            migrationBuilder.CreateIndex(
+                name: "idx_documents_content_hash",
+                table: "documents",
+                column: "ContentHash");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_documents_status",
+                table: "documents",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_documents_tenant_id",
+                table: "documents",
+                column: "TenantId");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_domains_api_key",
+                table: "domains",
+                column: "ApiKey",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_domains_is_verified",
+                table: "domains",
+                column: "IsVerified");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_domains_tenant_id",
+                table: "domains",
+                column: "TenantId");
+
             migrationBuilder.CreateIndex(
                 name: "idx_messages_conversation_created",
                 table: "messages",
@@ -354,19 +313,63 @@ namespace CustomerSupport.Infrastructure.Data.Migrations
                 name: "IX_messages_SentByUserId",
                 table: "messages",
                 column: "SentByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_tenants_created_at",
+                table: "tenants",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_tenants_email",
+                table: "tenants",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_tenants_status",
+                table: "tenants",
+                column: "Status");
+
+            migrationBuilder.CreateIndex(
+                name: "idx_users_email",
+                table: "users",
+                column: "Email",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "idx_users_tenant_email",
+                table: "users",
+                columns: new[] { "TenantId", "Email" });
+
+            migrationBuilder.CreateIndex(
+                name: "idx_users_tenant_id",
+                table: "users",
+                column: "TenantId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "document_chunks");
-            migrationBuilder.DropTable(name: "messages");
-            migrationBuilder.DropTable(name: "conversations");
-            migrationBuilder.DropTable(name: "documents");
-            migrationBuilder.DropTable(name: "domains");
-            migrationBuilder.DropTable(name: "users");
-            migrationBuilder.DropTable(name: "tenants");
+            migrationBuilder.DropTable(
+                name: "document_chunks");
+
+            migrationBuilder.DropTable(
+                name: "messages");
+
+            migrationBuilder.DropTable(
+                name: "documents");
+
+            migrationBuilder.DropTable(
+                name: "conversations");
+
+            migrationBuilder.DropTable(
+                name: "domains");
+
+            migrationBuilder.DropTable(
+                name: "users");
+
+            migrationBuilder.DropTable(
+                name: "tenants");
         }
     }
 }
-

@@ -5,22 +5,32 @@
 (function () {
   'use strict';
 
-  // Get script tag attributes
-  const scripts = document.querySelectorAll('script[data-api-key]');
-  const currentScript = scripts[scripts.length - 1];
+  // Get script tag attributes - support both old (data-api-key) and new (data-domain) formats
+  let currentScript = document.querySelector('script[data-domain]') || 
+                      document.querySelector('script[data-api-key]');
+  
+  // Fallback: find the script that loaded this widget.js
+  if (!currentScript) {
+    const scripts = document.querySelectorAll('script[src*="widget.js"]');
+    currentScript = scripts[scripts.length - 1];
+  }
   
   if (!currentScript) {
     console.error('Customer Support Widget: Script tag not found');
     return;
   }
 
+  // Support both attribute naming conventions
+  const domain = currentScript.getAttribute('data-domain');
   const apiKey = currentScript.getAttribute('data-api-key');
-  const domainId = currentScript.getAttribute('data-domain-id');
-  const widgetUrl = currentScript.getAttribute('data-widget-url') || 
-                    'http://localhost:3001'; // Default to localhost for development
+  const apiUrl = currentScript.getAttribute('data-api-url') || 'http://localhost:5000';
+  
+  // Get widget URL from the script src or fallback to localhost
+  const scriptSrc = currentScript.getAttribute('src') || '';
+  const widgetBaseUrl = scriptSrc.replace('/widget.js', '') || 'http://localhost:3001';
 
-  if (!apiKey) {
-    console.error('Customer Support Widget: API key is required');
+  if (!domain && !apiKey) {
+    console.error('Customer Support Widget: data-domain or data-api-key is required');
     return;
   }
 
@@ -38,7 +48,14 @@
   // Create iframe
   const iframe = document.createElement('iframe');
   iframe.id = 'cs-widget-iframe';
-  iframe.src = `${widgetUrl}?apiKey=${apiKey}&domainId=${domainId || ''}`;
+  
+  // Build query params - prefer domain, fallback to apiKey
+  const params = new URLSearchParams();
+  if (domain) params.set('domain', domain);
+  if (apiKey) params.set('apiKey', apiKey);
+  params.set('apiUrl', apiUrl);
+  
+  iframe.src = `${widgetBaseUrl}?${params.toString()}`;
   iframe.style.cssText = `
     border: none;
     width: 100vw;
@@ -47,6 +64,7 @@
     bottom: 0;
     right: 0;
     pointer-events: auto;
+    background: transparent;
   `;
   iframe.setAttribute('allow', 'clipboard-write');
   iframe.setAttribute('title', 'Customer Support Chat Widget');

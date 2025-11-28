@@ -1,48 +1,48 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import {
   MessageSquare,
-  Filter,
   User,
   Bot,
   Clock,
   CheckCircle2,
   AlertTriangle,
   Search,
-  Calendar,
-  TrendingUp,
   Mail
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import GlassmorphismLayout from '@/components/GlassmorphismLayout';
-import { ModernCard } from '@/components/ui/ModernCard';
+import LuxuryLayout from '@/components/LuxuryLayout';
+import { LuxuryCard } from '@/components/ui/LuxuryCard';
 import { PageLoader } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 
+// Local interfaces matching API response
 interface Message {
   id: string;
   role: string;
   content: string;
   confidenceScore?: number;
-  isFromHuman: boolean;
   createdAt: string;
 }
 
 interface Conversation {
   id: string;
-  domainUrl: string;
-  sessionId: string;
+  tenantId: string;
+  domainId?: string;
+  status: string;
+  startedAt: string;
+  endedAt?: string;
   customerEmail?: string;
   customerName?: string;
-  status: string;
-  isEscalated: boolean;
   messageCount: number;
-  createdAt: string;
-  endedAt?: string;
   messages?: Message[];
+  // Display fields
+  domainUrl?: string;
+  sessionId?: string;
+  isEscalated?: boolean;
 }
 
 export default function ConversationsPage() {
@@ -54,74 +54,75 @@ export default function ConversationsPage() {
   const [escalatedFilter, setEscalatedFilter] = useState('');
   const { showToast } = useToast();
 
-  useEffect(() => {
-    loadConversations();
-  }, [statusFilter, escalatedFilter]);
-
-  const loadConversations = async () => {
+  const loadConversations = useCallback(async () => {
     try {
       const params: any = {};
       if (statusFilter) params.status = statusFilter;
       if (escalatedFilter) params.isEscalated = escalatedFilter === 'true';
 
       const data = await api.conversations.getAll(params);
-      setConversations(data.items || []);
+      const mappedItems = (data.items || []).map((item: any) => ({
+        ...item,
+        status: item.status?.toString() || 'Open',
+      }));
+      setConversations(mappedItems);
     } catch (error) {
       showToast('error', 'Failed to load conversations');
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, escalatedFilter, showToast]);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
 
   const loadConversationDetails = async (id: string) => {
     try {
       const data = await api.conversations.getById(id);
-      setSelectedConversation(data);
+      const mappedData: Conversation = {
+        ...data,
+        status: data.status?.toString() || 'Open',
+      };
+      setSelectedConversation(mappedData);
     } catch (error) {
       showToast('error', 'Failed to load conversation details');
     }
   };
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      Active: 'from-green-500 to-emerald-500',
-      Closed: 'from-gray-500 to-gray-600',
-      Escalated: 'from-red-500 to-rose-500',
-      Pending: 'from-yellow-500 to-orange-500',
-    };
-    return colors[status] || 'from-gray-500 to-gray-600';
-  };
-
   const getStatusBadgeColor = (status: string) => {
     const colors: Record<string, string> = {
-      Active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-      Closed: 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
-      Escalated: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
-      Pending: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
+      Active: 'bg-green-500/10 text-green-400 border border-green-500/20',
+      Open: 'bg-green-500/10 text-green-400 border border-green-500/20',
+      InProgress: 'bg-primary-500/10 text-primary-400 border border-primary-500/20',
+      Resolved: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      Closed: 'bg-gray-500/10 text-gray-400 border border-gray-500/20',
+      Escalated: 'bg-red-500/10 text-red-400 border border-red-500/20',
+      Pending: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20',
     };
-    return colors[status] || 'bg-gray-100 text-gray-700';
+    return colors[status] || 'bg-gray-500/10 text-gray-400 border border-gray-500/20';
   };
 
   const filteredConversations = conversations.filter((conv) =>
     conv.customerName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     conv.customerEmail?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    conv.domainUrl.toLowerCase().includes(searchQuery.toLowerCase())
+    conv.domainUrl?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) return <PageLoader />;
 
   return (
-    <GlassmorphismLayout>
+    <LuxuryLayout>
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 dark:from-white dark:via-primary-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold text-white mb-2">
             Conversations
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
+          <p className="text-gray-400 text-lg">
             View and manage customer conversations
           </p>
         </motion.div>
@@ -132,11 +133,11 @@ export default function ConversationsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <ModernCard variant="glass" className="p-4">
+          <LuxuryCard className="p-4">
             <div className="flex flex-wrap gap-4 items-end">
               {/* Search */}
               <div className="flex-1 min-w-[250px]">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Search
                 </label>
                 <div className="relative">
@@ -148,9 +149,9 @@ export default function ConversationsPage() {
                     placeholder="Search by name, email, or domain..."
                     className={cn(
                       'w-full pl-10 pr-4 py-2 rounded-xl',
-                      'bg-gray-50 dark:bg-gray-900/50',
-                      'border-2 border-gray-200 dark:border-gray-700',
-                      'focus:border-primary-500 dark:focus:border-primary-400',
+                      'bg-white/[0.03] border border-white/[0.05]',
+                      'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                      'text-white placeholder-gray-600',
                       'transition-all duration-200'
                     )}
                   />
@@ -159,7 +160,7 @@ export default function ConversationsPage() {
 
               {/* Status Filter */}
               <div className="min-w-[180px]">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Status
                 </label>
                 <select
@@ -167,22 +168,23 @@ export default function ConversationsPage() {
                   onChange={(e) => setStatusFilter(e.target.value)}
                   className={cn(
                     'w-full px-4 py-2 rounded-xl',
-                    'bg-gray-50 dark:bg-gray-900/50',
-                    'border-2 border-gray-200 dark:border-gray-700',
-                    'focus:border-primary-500 dark:focus:border-primary-400',
+                    'bg-white/[0.03] border border-white/[0.05]',
+                    'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                    'text-white',
                     'transition-all duration-200'
                   )}
                 >
-                  <option value="">All Status</option>
-                  <option value="Active">Active</option>
-                  <option value="Closed">Closed</option>
-                  <option value="Escalated">Escalated</option>
+                  <option value="" className="bg-gray-900">All Status</option>
+                  <option value="Open" className="bg-gray-900">Open</option>
+                  <option value="InProgress" className="bg-gray-900">In Progress</option>
+                  <option value="Resolved" className="bg-gray-900">Resolved</option>
+                  <option value="Closed" className="bg-gray-900">Closed</option>
                 </select>
               </div>
 
               {/* Escalated Filter */}
               <div className="min-w-[180px]">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-400 mb-2">
                   Priority
                 </label>
                 <select
@@ -190,15 +192,15 @@ export default function ConversationsPage() {
                   onChange={(e) => setEscalatedFilter(e.target.value)}
                   className={cn(
                     'w-full px-4 py-2 rounded-xl',
-                    'bg-gray-50 dark:bg-gray-900/50',
-                    'border-2 border-gray-200 dark:border-gray-700',
-                    'focus:border-primary-500 dark:focus:border-primary-400',
+                    'bg-white/[0.03] border border-white/[0.05]',
+                    'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                    'text-white',
                     'transition-all duration-200'
                   )}
                 >
-                  <option value="">All</option>
-                  <option value="true">Escalated Only</option>
-                  <option value="false">Normal</option>
+                  <option value="" className="bg-gray-900">All</option>
+                  <option value="true" className="bg-gray-900">Escalated Only</option>
+                  <option value="false" className="bg-gray-900">Normal</option>
                 </select>
               </div>
 
@@ -211,30 +213,30 @@ export default function ConversationsPage() {
                   setEscalatedFilter('');
                   setSearchQuery('');
                 }}
-                className="px-4 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-sm font-medium"
+                className="px-4 py-2 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] transition-colors text-sm font-medium text-gray-300"
               >
                 Clear Filters
               </motion.button>
             </div>
-          </ModernCard>
+          </LuxuryCard>
         </motion.div>
 
         {/* Conversations Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Conversations List */}
-          <div className="lg:col-span-1 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto pr-2">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+          <div className="lg:col-span-1 space-y-3 max-h-[calc(100vh-400px)] overflow-y-auto pr-2 custom-scrollbar">
+            <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-primary-500" />
               All Conversations ({filteredConversations.length})
             </h2>
 
             {filteredConversations.length === 0 ? (
-              <ModernCard variant="soft" className="p-8 text-center">
-                <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 dark:text-gray-400">
+              <LuxuryCard className="p-8 text-center">
+                <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">
                   No conversations found
                 </p>
-              </ModernCard>
+              </LuxuryCard>
             ) : (
               filteredConversations.map((conv, index) => (
                 <motion.div
@@ -243,26 +245,24 @@ export default function ConversationsPage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <ModernCard
-                    variant={selectedConversation?.id === conv.id ? 'elevated' : 'glass'}
-                    hover
+                  <LuxuryCard
                     className={cn(
-                      'p-4 cursor-pointer transition-all',
-                      selectedConversation?.id === conv.id && 'ring-2 ring-primary-500'
+                      'p-4 transition-all cursor-pointer',
+                      selectedConversation?.id === conv.id && 'border-primary-500/50 bg-primary-500/5'
                     )}
                     onClick={() => loadConversationDetails(conv.id)}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <p className="font-semibold text-sm text-gray-900 dark:text-white truncate">
+                        <p className="font-semibold text-sm text-white truncate">
                           {conv.customerName || conv.customerEmail || 'Anonymous'}
                         </p>
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {conv.domainUrl}
+                        <p className="text-xs text-gray-500 truncate">
+                          {conv.domainUrl || 'No domain'}
                         </p>
                       </div>
                       {conv.isEscalated && (
-                        <span className="px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium flex items-center gap-1">
+                        <span className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/20 rounded-full text-xs font-medium flex items-center gap-1">
                           <AlertTriangle className="w-3 h-3" />
                         </span>
                       )}
@@ -275,16 +275,16 @@ export default function ConversationsPage() {
                       )}>
                         {conv.status}
                       </span>
-                      <span className="text-gray-500 dark:text-gray-400 flex items-center gap-1">
+                      <span className="text-gray-500 flex items-center gap-1">
                         <MessageSquare className="w-3 h-3" />
                         {conv.messageCount}
                       </span>
                     </div>
 
-                    <p className="text-xs text-gray-400 mt-2">
-                      {new Date(conv.createdAt).toLocaleString()}
+                    <p className="text-xs text-gray-600 mt-2">
+                      {new Date(conv.startedAt).toLocaleString()}
                     </p>
-                  </ModernCard>
+                  </LuxuryCard>
                 </motion.div>
               ))
             )}
@@ -297,26 +297,26 @@ export default function ConversationsPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
               >
-                <ModernCard variant="glass" className="p-6">
+                <LuxuryCard className="p-6 h-[calc(100vh-300px)] flex flex-col">
                   {/* Header */}
-                  <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+                  <div className="border-b border-white/[0.05] pb-4 mb-4">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-purple-500 flex items-center justify-center text-white font-bold text-lg shadow-lg">
-                          {selectedConversation.customerName?.[0] || 'A'}
+                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg shadow-glow-sm">
+                          {selectedConversation.customerName?.[0] || selectedConversation.customerEmail?.[0] || 'A'}
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                            {selectedConversation.customerName || 'Anonymous Customer'}
+                          <h2 className="text-2xl font-bold text-white">
+                            {selectedConversation.customerName || selectedConversation.customerEmail || 'Anonymous Customer'}
                           </h2>
                           {selectedConversation.customerEmail && (
-                            <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                            <p className="text-sm text-gray-400 flex items-center gap-1">
                               <Mail className="w-4 h-4" />
                               {selectedConversation.customerEmail}
                             </p>
                           )}
-                          <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                            Domain: {selectedConversation.domainUrl}
+                          <p className="text-xs text-gray-500 mt-1">
+                            Domain: {selectedConversation.domainUrl || 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -329,7 +329,7 @@ export default function ConversationsPage() {
                           {selectedConversation.status}
                         </span>
                         {selectedConversation.isEscalated && (
-                          <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 flex items-center gap-1">
+                          <span className="px-3 py-1 rounded-full text-sm font-medium bg-red-500/10 text-red-400 border border-red-500/20 flex items-center gap-1">
                             <AlertTriangle className="w-4 h-4" />
                             Escalated
                           </span>
@@ -338,12 +338,12 @@ export default function ConversationsPage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center gap-2 text-gray-400">
                         <Clock className="w-4 h-4" />
-                        <span>Started: {new Date(selectedConversation.createdAt).toLocaleString()}</span>
+                        <span>Started: {new Date(selectedConversation.startedAt).toLocaleString()}</span>
                       </div>
                       {selectedConversation.endedAt && (
-                        <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400">
+                        <div className="flex items-center gap-2 text-gray-400">
                           <CheckCircle2 className="w-4 h-4" />
                           <span>Ended: {new Date(selectedConversation.endedAt).toLocaleString()}</span>
                         </div>
@@ -352,79 +352,86 @@ export default function ConversationsPage() {
                   </div>
 
                   {/* Messages */}
-                  <div className="space-y-4 max-h-[calc(100vh-500px)] overflow-y-auto pr-2">
-                    {selectedConversation.messages?.map((message, index) => (
-                      <motion.div
-                        key={message.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.05 }}
-                        className={cn(
-                          'flex',
-                          message.role === 'User' || message.role === 'Customer'
-                            ? 'justify-end'
-                            : 'justify-start'
-                        )}
-                      >
-                        <div
+                  <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
+                    {selectedConversation.messages && selectedConversation.messages.length > 0 ? (
+                      selectedConversation.messages.map((message, index) => (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.05 }}
                           className={cn(
-                            'max-w-[80%] rounded-2xl p-4 shadow-soft',
+                            'flex',
                             message.role === 'User' || message.role === 'Customer'
-                              ? 'bg-gradient-to-br from-primary-500 to-primary-600 text-white'
-                              : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-700'
+                              ? 'justify-end'
+                              : 'justify-start'
                           )}
                         >
-                          <div className="flex items-center gap-2 mb-2">
-                            {message.role === 'User' || message.role === 'Customer' ? (
-                              <User className="w-4 h-4" />
-                            ) : (
-                              <Bot className="w-4 h-4" />
+                          <div
+                            className={cn(
+                              'max-w-[80%] rounded-2xl p-4',
+                              message.role === 'User' || message.role === 'Customer'
+                                ? 'bg-primary-600 text-white shadow-glow-sm'
+                                : 'bg-white/[0.05] border border-white/[0.05] text-white'
                             )}
-                            <span className="font-semibold text-sm">{message.role}</span>
-                            {message.confidenceScore && (
-                              <span className={cn(
-                                'text-xs px-2 py-0.5 rounded-full',
-                                message.role === 'User' || message.role === 'Customer'
-                                  ? 'bg-white/20'
-                                  : 'bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-400'
-                              )}>
-                                {(message.confidenceScore * 100).toFixed(0)}% confidence
-                              </span>
-                            )}
+                          >
+                            <div className="flex items-center gap-2 mb-2">
+                              {message.role === 'User' || message.role === 'Customer' ? (
+                                <User className="w-4 h-4 text-white/70" />
+                              ) : (
+                                <Bot className="w-4 h-4 text-primary-400" />
+                              )}
+                              <span className="font-semibold text-sm text-white/90">{message.role}</span>
+                              {message.confidenceScore && (
+                                <span className={cn(
+                                  'text-xs px-2 py-0.5 rounded-full',
+                                  message.role === 'User' || message.role === 'Customer'
+                                    ? 'bg-white/20'
+                                    : 'bg-primary-500/20 text-primary-300'
+                                )}>
+                                  {(message.confidenceScore * 100).toFixed(0)}% confidence
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm whitespace-pre-wrap leading-relaxed opacity-90">
+                              {message.content}
+                            </p>
+                            <p className={cn(
+                              'text-xs mt-2',
+                              message.role === 'User' || message.role === 'Customer'
+                                ? 'text-white/50'
+                                : 'text-gray-500'
+                            )}>
+                              {new Date(message.createdAt).toLocaleTimeString()}
+                            </p>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap leading-relaxed">
-                            {message.content}
-                          </p>
-                          <p className={cn(
-                            'text-xs mt-2',
-                            message.role === 'User' || message.role === 'Customer'
-                              ? 'text-white/70'
-                              : 'text-gray-500 dark:text-gray-400'
-                          )}>
-                            {new Date(message.createdAt).toLocaleTimeString()}
-                          </p>
-                        </div>
-                      </motion.div>
-                    ))}
+                        </motion.div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8 text-gray-500 h-full flex flex-col items-center justify-center">
+                        <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>No messages in this conversation yet</p>
+                      </div>
+                    )}
                   </div>
-                </ModernCard>
+                </LuxuryCard>
               </motion.div>
             ) : (
-              <ModernCard variant="soft" className="p-12 text-center h-full flex flex-col items-center justify-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary-200 to-purple-200 dark:from-primary-800 dark:to-purple-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <MessageSquare className="w-10 h-10 text-primary-600 dark:text-primary-400" />
+              <LuxuryCard className="p-12 text-center h-full flex flex-col items-center justify-center">
+                <div className="w-20 h-20 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-4 border border-white/[0.05]">
+                  <MessageSquare className="w-10 h-10 text-primary-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-white mb-2">
                   No Conversation Selected
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-500">
                   Select a conversation from the list to view messages
                 </p>
-              </ModernCard>
+              </LuxuryCard>
             )}
           </div>
         </div>
       </div>
-    </GlassmorphismLayout>
+    </LuxuryLayout>
   );
 }

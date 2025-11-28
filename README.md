@@ -61,6 +61,8 @@ This platform allows enterprises to:
 |----------|-------------|
 | [**QUICK_START.md**](QUICK_START.md) | ⚡ Get running in 5 minutes |
 | [**RUNNING_THE_APPLICATION.md**](RUNNING_THE_APPLICATION.md) | 📖 Complete setup guide with troubleshooting |
+| [**AUTHENTICATION_GUIDE.md**](AUTHENTICATION_GUIDE.md) | 🔐 Login issues & user management |
+| [**LOGIN_FIX_SUMMARY.md**](LOGIN_FIX_SUMMARY.md) | 🔧 Quick fix for "Failed login attempt" error |
 
 ### Architecture & Planning
 | Document | Description |

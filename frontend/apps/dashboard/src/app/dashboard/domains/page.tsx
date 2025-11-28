@@ -8,17 +8,18 @@ import {
   Copy, 
   Check, 
   Trash2, 
-  ExternalLink,
   Shield,
   Code2,
-  Zap
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { api } from '@/lib/api';
-import GlassmorphismLayout from '@/components/GlassmorphismLayout';
-import { ModernCard } from '@/components/ui/ModernCard';
+import LuxuryLayout from '@/components/LuxuryLayout';
+import { LuxuryCard } from '@/components/ui/LuxuryCard';
 import { LoadingSpinner, PageLoader } from '@/components/ui/LoadingSpinner';
 import { useToast } from '@/components/ui/Toast';
 import { Modal } from '@/components/ui/Modal';
+import { CreateAgentWizard, AgentConfig } from '@/components/CreateAgentWizard';
 import { cn } from '@/lib/utils';
 
 interface Domain {
@@ -31,14 +32,21 @@ interface Domain {
   createdAt: string;
 }
 
+interface EmbedScripts {
+  htmlScript: string;
+  reactScript: string;
+}
+
 export default function DomainsPage() {
   const [domains, setDomains] = useState<Domain[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingDomain, setAddingDomain] = useState(false);
   const [newDomain, setNewDomain] = useState('');
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
-  const [embedScript, setEmbedScript] = useState('');
+  const [embedScripts, setEmbedScripts] = useState<EmbedScripts | null>(null);
+  const [embedTab, setEmbedTab] = useState<'html' | 'react'>('html');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [showAgentWizard, setShowAgentWizard] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -75,20 +83,41 @@ export default function DomainsPage() {
     }
   };
 
+  const handleCreateAgent = async (config: AgentConfig) => {
+    try {
+      await api.domains.createAgent(config);
+      await loadDomains();
+      showToast('success', 'Agent created!', `Your AI agent for ${config.companyName} is ready`);
+    } catch (error) {
+      showToast('error', 'Failed to create agent', 'Please try again');
+      throw error;
+    }
+  };
+
   const handleGetEmbedCode = async (domain: Domain) => {
     try {
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/domains/${domain.id}/script`,
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/domains/${domain.id}/script`,
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
+            Authorization: `Bearer ${localStorage.getItem('access_token')}`,
           },
         }
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      
       const data = await response.json();
-      setEmbedScript(data.script);
+      setEmbedScripts({
+        htmlScript: data.htmlScript || data.script,
+        reactScript: data.reactScript || '',
+      });
+      setEmbedTab('html');
       setSelectedDomain(domain);
     } catch (error) {
+      console.error('Embed code error:', error);
       showToast('error', 'Failed to get embed code', 'Please try again');
     }
   };
@@ -115,19 +144,38 @@ export default function DomainsPage() {
   if (loading) return <PageLoader />;
 
   return (
-    <GlassmorphismLayout>
+    <LuxuryLayout>
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between"
         >
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-primary-600 to-purple-600 dark:from-white dark:via-primary-400 dark:to-purple-400 bg-clip-text text-transparent mb-2">
-            Domains
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg">
-            Connect your websites and generate embed scripts
-          </p>
+          <div>
+            <h1 className="text-4xl font-bold text-white mb-2">
+              AI Agents
+            </h1>
+            <p className="text-gray-400 text-lg">
+              Create intelligent agents trained on your business
+            </p>
+          </div>
+          
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => setShowAgentWizard(true)}
+            className={cn(
+              'px-6 py-3 rounded-xl font-semibold',
+              'bg-gradient-to-r from-primary-600 to-purple-600',
+              'text-white shadow-glow-sm',
+              'hover:shadow-glow-md transition-all duration-300',
+              'flex items-center gap-2'
+            )}
+          >
+            <Sparkles className="w-5 h-5" />
+            Create AI Agent
+          </motion.button>
         </motion.div>
 
         {/* Add Domain Card */}
@@ -136,16 +184,16 @@ export default function DomainsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <ModernCard variant="glass" className="p-6">
+          <LuxuryCard className="p-6">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-500 rounded-xl">
+              <div className="p-3 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl shadow-glow-sm">
                 <Plus className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                <h2 className="text-xl font-semibold text-white">
                   Add New Domain
                 </h2>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
+                <p className="text-sm text-gray-400">
                   Connect your website to start using the chat widget
                 </p>
               </div>
@@ -160,12 +208,10 @@ export default function DomainsPage() {
                 placeholder="www.yourwebsite.com"
                 className={cn(
                   'flex-1 px-4 py-3 rounded-xl',
-                  'bg-gray-50 dark:bg-gray-900/50',
-                  'border-2 border-gray-200 dark:border-gray-700',
-                  'focus:border-primary-500 dark:focus:border-primary-400',
-                  'focus:ring-2 focus:ring-primary-500/20',
-                  'transition-all duration-200',
-                  'placeholder:text-gray-500'
+                  'bg-white/[0.03] border border-white/[0.05]',
+                  'focus:border-primary-500/50 focus:bg-white/[0.05] focus:ring-0',
+                  'text-white placeholder-gray-600',
+                  'transition-all duration-200'
                 )}
               />
               <motion.button
@@ -175,9 +221,8 @@ export default function DomainsPage() {
                 disabled={addingDomain || !newDomain.trim()}
                 className={cn(
                   'px-6 py-3 rounded-xl font-medium',
-                  'bg-gradient-to-r from-primary-500 to-primary-600',
-                  'hover:from-primary-600 hover:to-primary-700',
-                  'text-white shadow-soft hover:shadow-medium',
+                  'bg-primary-600 hover:bg-primary-500',
+                  'text-white shadow-glow-sm',
                   'transition-all duration-200',
                   'disabled:opacity-50 disabled:cursor-not-allowed',
                   'flex items-center gap-2'
@@ -193,7 +238,7 @@ export default function DomainsPage() {
                 )}
               </motion.button>
             </div>
-          </ModernCard>
+          </LuxuryCard>
         </motion.div>
 
         {/* Domains List */}
@@ -204,17 +249,17 @@ export default function DomainsPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <ModernCard variant="soft" className="p-12 text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Globe className="w-10 h-10 text-gray-400 dark:text-gray-500" />
+              <LuxuryCard className="p-12 text-center">
+                <div className="w-20 h-20 bg-white/[0.03] rounded-full flex items-center justify-center mx-auto mb-4 border border-white/[0.05]">
+                  <Globe className="w-10 h-10 text-gray-500" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                <h3 className="text-xl font-semibold text-white mb-2">
                   No domains yet
                 </h3>
-                <p className="text-gray-600 dark:text-gray-400">
+                <p className="text-gray-400">
                   Add your first domain above to get started! 🚀
                 </p>
-              </ModernCard>
+              </LuxuryCard>
             </motion.div>
           ) : (
             domains.map((domain, index) => (
@@ -224,29 +269,25 @@ export default function DomainsPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 + index * 0.05 }}
               >
-                <ModernCard 
-                  variant="glass" 
-                  hover={true}
-                  className="p-6 group"
-                >
+                <LuxuryCard className="p-6 group">
                   <div className="flex items-start justify-between">
                     {/* Domain Info */}
                     <div className="flex items-start gap-4 flex-1">
-                      <div className="p-3 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg group-hover:scale-110 transition-transform">
-                        <Globe className="w-6 h-6 text-white" />
+                      <div className="p-3 bg-white/[0.03] rounded-xl border border-white/[0.05] group-hover:border-primary-500/30 transition-colors">
+                        <Globe className="w-6 h-6 text-primary-400" />
                       </div>
                       
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
-                          <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                          <h3 className="text-xl font-semibold text-white">
                             {domain.domainUrl}
                           </h3>
                           <span
                             className={cn(
                               'px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1',
                               domain.isVerified || domain.status === 'Active'
-                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                                ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                                : 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20'
                             )}
                           >
                             <Shield className="w-3 h-3" />
@@ -257,27 +298,27 @@ export default function DomainsPage() {
                         {/* API Key */}
                         <div className="space-y-2 text-sm">
                           <div className="flex items-center gap-2">
-                            <span className="text-gray-600 dark:text-gray-400 font-medium">
+                            <span className="text-gray-400 font-medium">
                               API Key:
                             </span>
-                            <code className="px-3 py-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-mono">
+                            <code className="px-3 py-1 bg-black/40 rounded-lg text-xs font-mono text-gray-300 border border-white/[0.05]">
                               {domain.apiKey}
                             </code>
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
                               onClick={() => copyToClipboard(domain.apiKey, `key-${domain.id}`)}
-                              className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                              className="p-1.5 hover:bg-white/[0.1] rounded-lg transition"
                             >
                               {copiedId === `key-${domain.id}` ? (
-                                <Check className="w-4 h-4 text-green-500" />
+                                <Check className="w-4 h-4 text-green-400" />
                               ) : (
                                 <Copy className="w-4 h-4 text-gray-500" />
                               )}
                             </motion.button>
                           </div>
 
-                          <p className="text-gray-500 dark:text-gray-500 text-xs flex items-center gap-1">
+                          <p className="text-gray-500 text-xs flex items-center gap-1">
                             <Zap className="w-3 h-3" />
                             Added on {new Date(domain.createdAt).toLocaleDateString()}
                           </p>
@@ -293,8 +334,8 @@ export default function DomainsPage() {
                         onClick={() => handleGetEmbedCode(domain)}
                         className={cn(
                           'px-4 py-2 rounded-xl font-medium text-sm',
-                          'bg-primary-500 hover:bg-primary-600',
-                          'text-white shadow-soft hover:shadow-medium',
+                          'bg-primary-600 hover:bg-primary-500',
+                          'text-white shadow-glow-sm',
                           'transition-all duration-200',
                           'flex items-center gap-2'
                         )}
@@ -309,8 +350,8 @@ export default function DomainsPage() {
                         onClick={() => handleDelete(domain.id, domain.domainUrl)}
                         className={cn(
                           'p-2 rounded-xl',
-                          'bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30',
-                          'text-red-600 dark:text-red-400',
+                          'bg-red-500/10 hover:bg-red-500/20 border border-red-500/10',
+                          'text-red-400',
                           'transition-colors'
                         )}
                       >
@@ -318,7 +359,7 @@ export default function DomainsPage() {
                       </motion.button>
                     </div>
                   </div>
-                </ModernCard>
+                </LuxuryCard>
               </motion.div>
             ))
           )}
@@ -326,33 +367,65 @@ export default function DomainsPage() {
 
         {/* Embed Code Modal */}
         <Modal
-          isOpen={!!embedScript}
+          isOpen={!!embedScripts}
           onClose={() => {
-            setEmbedScript('');
+            setEmbedScripts(null);
             setSelectedDomain(null);
           }}
           title="Embed Code"
           size="lg"
         >
           <div className="space-y-4">
-            <p className="text-gray-600 dark:text-gray-400">
-              Copy this code and paste it before the closing <code className="px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded">&lt;/body&gt;</code> tag on{' '}
-              <strong>{selectedDomain?.domainUrl}</strong>
+            <p className="text-gray-400">
+              Copy this code and add it to{' '}
+              <strong className="text-white">{selectedDomain?.domainUrl}</strong>
             </p>
 
+            {/* Tabs */}
+            <div className="flex gap-2 p-1 bg-white/[0.03] rounded-xl border border-white/[0.05]">
+              <button
+                onClick={() => setEmbedTab('html')}
+                className={cn(
+                  'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  embedTab === 'html'
+                    ? 'bg-primary-600 text-white shadow-glow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'
+                )}
+              >
+                HTML / Vanilla JS
+              </button>
+              <button
+                onClick={() => setEmbedTab('react')}
+                className={cn(
+                  'flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                  embedTab === 'react'
+                    ? 'bg-primary-600 text-white shadow-glow-sm'
+                    : 'text-gray-400 hover:text-white hover:bg-white/[0.05]'
+                )}
+              >
+                React / Next.js
+              </button>
+            </div>
+
+            {/* Code Block */}
             <div className="relative">
-              <pre className="p-4 bg-gray-900 dark:bg-gray-950 rounded-xl overflow-x-auto text-sm text-green-400 font-mono">
-                {embedScript}
+              <pre className="p-4 bg-white/[0.03] rounded-xl overflow-x-auto text-sm text-primary-300 font-mono border border-white/[0.05] backdrop-blur-sm max-h-80">
+                <code className="block whitespace-pre-wrap break-words">
+                  {embedTab === 'html' ? embedScripts?.htmlScript : embedScripts?.reactScript}
+                </code>
               </pre>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => copyToClipboard(embedScript, 'embed')}
+                onClick={() => copyToClipboard(
+                  embedTab === 'html' ? embedScripts?.htmlScript || '' : embedScripts?.reactScript || '',
+                  'embed'
+                )}
                 className={cn(
-                  'absolute top-2 right-2 px-3 py-2 rounded-lg',
-                  'bg-gray-800 hover:bg-gray-700',
-                  'text-white text-sm font-medium',
-                  'flex items-center gap-2'
+                  'absolute top-3 right-3 px-4 py-2 rounded-lg',
+                  'bg-primary-600 hover:bg-primary-500',
+                  'text-white text-sm font-medium shadow-glow-sm',
+                  'flex items-center gap-2 transition-all'
                 )}
               >
                 {copiedId === 'embed' ? (
@@ -369,14 +442,38 @@ export default function DomainsPage() {
               </motion.button>
             </div>
 
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
-              <p className="text-sm text-blue-800 dark:text-blue-300">
-                💡 <strong>Pro Tip:</strong> The widget will automatically appear on all pages where you paste this code!
-              </p>
+            {/* Instructions based on tab */}
+            <div className="p-4 bg-primary-500/10 rounded-xl border border-primary-500/20 backdrop-blur-sm">
+              {embedTab === 'html' ? (
+                <div className="text-sm text-primary-300 space-y-2">
+                  <p className="flex items-start gap-2">
+                    <span>📄</span>
+                    <span><strong className="text-primary-200">For HTML sites:</strong> Paste this code before the closing <code className="px-1 py-0.5 bg-black/30 rounded">&lt;/body&gt;</code> tag.</span>
+                  </p>
+                </div>
+              ) : (
+                <div className="text-sm text-primary-300 space-y-2">
+                  <p className="flex items-start gap-2">
+                    <span>⚛️</span>
+                    <span><strong className="text-primary-200">For Next.js App Router:</strong> Add the <code className="px-1 py-0.5 bg-black/30 rounded">&lt;Script&gt;</code> component inside your <code className="px-1 py-0.5 bg-black/30 rounded">layout.js</code> or <code className="px-1 py-0.5 bg-black/30 rounded">layout.tsx</code> file, within the <code className="px-1 py-0.5 bg-black/30 rounded">&lt;body&gt;</code> tag.</span>
+                  </p>
+                  <p className="flex items-start gap-2">
+                    <span>📦</span>
+                    <span><strong className="text-primary-200">Important:</strong> Make sure to import <code className="px-1 py-0.5 bg-black/30 rounded">Script</code> from <code className="px-1 py-0.5 bg-black/30 rounded">next/script</code> at the top of your file.</span>
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </Modal>
+
+        {/* Create Agent Wizard */}
+        <CreateAgentWizard
+          isOpen={showAgentWizard}
+          onClose={() => setShowAgentWizard(false)}
+          onSubmit={handleCreateAgent}
+        />
       </div>
-    </GlassmorphismLayout>
+    </LuxuryLayout>
   );
 }

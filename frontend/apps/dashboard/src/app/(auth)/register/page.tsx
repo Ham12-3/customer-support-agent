@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
+import { Input } from '@/components/ui/Input';
 
 const registerSchema = z
   .object({
@@ -82,102 +83,79 @@ export default function RegisterPage() {
           )}
 
           <div className="space-y-4">
-            <div>
-              <label htmlFor="companyName" className="block text-sm font-medium text-gray-700">
-                Company Name
-              </label>
-              <input
-                {...register('companyName')}
-                id="companyName"
-                type="text"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="Acme Inc"
-              />
-              {errors.companyName && (
-                <p className="mt-1 text-sm text-red-600">{errors.companyName.message}</p>
-              )}
-            </div>
+            {/* Company Name */}
+            <Input
+              {...register('companyName')}
+              id="companyName"
+              label="Company Name"
+              type="text"
+              placeholder="Acme Inc"
+              error={!!errors.companyName}
+              helperText={errors.companyName?.message}
+              fullWidth
+            />
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <input
-                {...register('email')}
-                id="email"
-                type="email"
-                autoComplete="email"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="john@example.com"
-              />
-              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
-            </div>
+            {/* Email */}
+            <Input
+              {...register('email')}
+              id="email"
+              label="Email Address"
+              type="email"
+              autoComplete="email"
+              placeholder="john@example.com"
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              fullWidth
+            />
 
+            {/* First and Last Name */}
             <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  First Name
-                </label>
-                <input
-                  {...register('firstName')}
-                  id="firstName"
-                  type="text"
-                  className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="John"
-                />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
-                )}
-              </div>
-
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Last Name
-                </label>
-                <input
-                  {...register('lastName')}
-                  id="lastName"
-                  type="text"
-                  className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                  placeholder="Doe"
-                />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <input
-                {...register('password')}
-                id="password"
-                type="password"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="••••••••"
+              <Input
+                {...register('firstName')}
+                id="firstName"
+                label="First Name"
+                type="text"
+                placeholder="John"
+                error={!!errors.firstName}
+                helperText={errors.firstName?.message}
+                fullWidth
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
+
+              <Input
+                {...register('lastName')}
+                id="lastName"
+                label="Last Name"
+                type="text"
+                placeholder="Doe"
+                error={!!errors.lastName}
+                helperText={errors.lastName?.message}
+                fullWidth
+              />
             </div>
 
-            <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Confirm Password
-              </label>
-              <input
-                {...register('confirmPassword')}
-                id="confirmPassword"
-                type="password"
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-                placeholder="••••••••"
-              />
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
-              )}
-            </div>
+            {/* Password with show/hide toggle */}
+            <Input
+              {...register('password')}
+              id="password"
+              label="Password"
+              type="password"
+              placeholder="••••••••"
+              error={!!errors.password}
+              helperText={errors.password?.message}
+              fullWidth
+            />
+
+            {/* Confirm Password with show/hide toggle */}
+            <Input
+              {...register('confirmPassword')}
+              id="confirmPassword"
+              label="Confirm Password"
+              type="password"
+              placeholder="••••••••"
+              error={!!errors.confirmPassword}
+              helperText={errors.confirmPassword?.message}
+              fullWidth
+            />
           </div>
 
           <div>

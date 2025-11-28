@@ -24,6 +24,12 @@ public class Domain : BaseEntity
     // Widget configuration
     public string? WidgetConfig { get; set; } // JSON configuration for branding, position, etc.
 
+    // Verification tracking
+    public int VerificationAttempts { get; set; }
+    public DateTime? LastVerificationAttemptAt { get; set; }
+    public DateTime? NextVerificationAttemptAt { get; set; }
+    public string? LastVerificationError { get; set; }
+
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
     public ICollection<Conversation> Conversations { get; set; } = new List<Conversation>();

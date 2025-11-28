@@ -32,10 +32,11 @@ public class DocumentsController : ControllerBase
     }
 
     /// <summary>
-    /// Get all documents for the current tenant
+    /// Get all documents for the current tenant, optionally filtered by domain
     /// </summary>
     [HttpGet]
     public async Task<ActionResult<DocumentListDto>> GetDocuments(
+        [FromQuery] Guid? domainId = null,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20)
     {
@@ -44,12 +45,20 @@ public class DocumentsController : ControllerBase
         var allDocuments = await _unitOfWork.Documents.GetAllAsync();
         var tenantDocuments = allDocuments
             .Where(d => ((Document)d).TenantId == tenantId)
-            .Cast<Document>()
+            .Cast<Document>();
+
+        // Filter by domain if specified
+        if (domainId.HasValue)
+        {
+            tenantDocuments = tenantDocuments.Where(d => d.DomainId == domainId.Value);
+        }
+
+        var orderedDocuments = tenantDocuments
             .OrderByDescending(d => d.CreatedAt)
             .ToList();
 
-        var totalCount = tenantDocuments.Count;
-        var pagedDocuments = tenantDocuments
+        var totalCount = orderedDocuments.Count;
+        var pagedDocuments = orderedDocuments
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .Select(MapToDocumentResponse)
@@ -82,90 +91,101 @@ public class DocumentsController : ControllerBase
     }
 
    /// <summary>
-/// Upload a new document to the knowledge base
-/// </summary>
-[HttpPost("upload")]
-public async Task<ActionResult<DocumentResponseDto>> UploadDocument(
-    [FromForm] IFormFile? file,
-    [FromForm] string title,
-    [FromForm] string? sourceUrl)
-{
-    try
+    /// Upload a new document to the knowledge base
+    /// </summary>
+    [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
+    public async Task<ActionResult<DocumentResponseDto>> UploadDocument(
+        [FromForm] CustomerSupport.Api.DTOs.UploadDocumentRequest request)
     {
-        if (file == null && string.IsNullOrEmpty(sourceUrl))
+        try
         {
-            return BadRequest("Either a file or source URL must be provided.");
-        }
-
-        if (string.IsNullOrEmpty(title))
-        {
-            return BadRequest("Title is required.");
-        }
-
-        var tenantId = GetTenantIdFromClaims();
-        string? filePath = null;
-        long? fileSize = null;
-        string? fileType = null;
-        string contentHash = string.Empty;
-
-        // Handle file upload
-        if (file != null)
-        {
-            fileSize = file.Length;
-            fileType = Path.GetExtension(file.FileName).TrimStart('.');
-            
-            // Create uploads directory if it doesn't exist
-            var uploadsDir = Path.Combine(_environment.ContentRootPath, "uploads", tenantId.ToString());
-            Directory.CreateDirectory(uploadsDir);
-
-            // Generate unique filename
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-            filePath = Path.Combine(uploadsDir, fileName);
-
-            // Save file
-            using (var stream = new FileStream(filePath, FileMode.Create))
+            if (request.File == null && string.IsNullOrEmpty(request.SourceUrl))
             {
-                await file.CopyToAsync(stream);
+                return BadRequest("Either a file or source URL must be provided.");
             }
 
-            // Calculate content hash
-            contentHash = await CalculateFileHashAsync(filePath);
+            if (string.IsNullOrEmpty(request.Title))
+            {
+                return BadRequest("Title is required.");
+            }
+
+            var tenantId = GetTenantIdFromClaims();
+
+            // Verify domain belongs to tenant if specified
+            if (request.DomainId.HasValue)
+            {
+                var domain = await _unitOfWork.Domains.GetByIdAsync(request.DomainId.Value);
+                if (domain == null || domain.TenantId != tenantId)
+                {
+                    return BadRequest("Invalid domain specified.");
+                }
+            }
+
+            string? filePath = null;
+            long? fileSize = null;
+            string? fileType = null;
+            string contentHash = string.Empty;
+
+            // Handle file upload
+            if (request.File != null)
+            {
+                fileSize = request.File.Length;
+                fileType = Path.GetExtension(request.File.FileName).TrimStart('.');
+                
+                // Create uploads directory if it doesn't exist
+                var uploadsDir = Path.Combine(_environment.ContentRootPath, "uploads", tenantId.ToString());
+                Directory.CreateDirectory(uploadsDir);
+
+                // Generate unique filename
+                var fileName = $"{Guid.NewGuid()}{Path.GetExtension(request.File.FileName)}";
+                filePath = Path.Combine(uploadsDir, fileName);
+
+                // Save file
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await request.File.CopyToAsync(stream);
+                }
+
+                // Calculate content hash
+                contentHash = await CalculateFileHashAsync(filePath);
+            }
+            else if (!string.IsNullOrEmpty(request.SourceUrl))
+            {
+                // For URL-based documents, use URL as hash
+                contentHash = ComputeHash(request.SourceUrl);
+                fileType = "url";
+            }
+
+            // Create document entity
+            var document = new Document
+            {
+                TenantId = tenantId,
+                DomainId = request.DomainId,
+                Title = request.Title,
+                SourceUrl = request.SourceUrl,
+                FileType = fileType,
+                FileSizeBytes = fileSize,
+                ContentHash = contentHash,
+                BlobStoragePath = filePath,
+                Status = DocumentStatus.Processing,
+                ChunkCount = 0
+            };
+
+            await _unitOfWork.Documents.AddAsync(document);
+            await _unitOfWork.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Document uploaded: {DocumentId} for tenant {TenantId}, domain {DomainId}",
+                document.Id, tenantId, request.DomainId);
+
+            // TODO: Trigger background processing to chunk and vectorize the document
+            
+            return CreatedAtAction(
+                nameof(GetDocument),
+                new { id = document.Id },
+                MapToDocumentResponse(document));
         }
-        else if (!string.IsNullOrEmpty(sourceUrl))
-        {
-            // For URL-based documents, use URL as hash
-            contentHash = ComputeHash(sourceUrl);
-            fileType = "url";
-        }
-
-        // Create document entity
-        var document = new Document
-        {
-            TenantId = tenantId,
-            Title = title,
-            SourceUrl = sourceUrl,
-            FileType = fileType,
-            FileSizeBytes = fileSize,
-            ContentHash = contentHash,
-            BlobStoragePath = filePath,
-            Status = DocumentStatus.Processing,
-            ChunkCount = 0
-        };
-
-        await _unitOfWork.Documents.AddAsync(document);
-        await _unitOfWork.SaveChangesAsync();
-
-        _logger.LogInformation(
-            "Document uploaded: {DocumentId} for tenant {TenantId}",
-            document.Id, tenantId);
-
-        // TODO: Trigger background processing to chunk and vectorize the document
-        
-        return CreatedAtAction(
-            nameof(GetDocument),
-            new { id = document.Id },
-            MapToDocumentResponse(document));
-    }
     catch (Exception ex)
     {
         _logger.LogError(ex, "Error uploading document");
@@ -221,6 +241,7 @@ public async Task<ActionResult<DocumentResponseDto>> UploadDocument(
         return new DocumentResponseDto
         {
             Id = document.Id,
+            DomainId = document.DomainId,
             Title = document.Title,
             SourceUrl = document.SourceUrl,
             FileType = document.FileType,

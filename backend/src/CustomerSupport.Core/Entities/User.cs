@@ -14,6 +14,8 @@ public class User : BaseEntity
     public string FirstName { get; set; } = string.Empty;
 
     public string LastName { get; set; } = string.Empty;
+    
+    public string FullName => $"{FirstName} {LastName}".Trim();
 
     public string PasswordHash { get; set; } = string.Empty;
 
@@ -22,8 +24,15 @@ public class User : BaseEntity
     public bool IsActive { get; set; } = true;
 
     public DateTime? LastLoginAt { get; set; }
+    
+    // Additional profile fields
+    public string? Company { get; set; }
+    public string? JobRole { get; set; }
+    public string? Timezone { get; set; }
+    public string? AvatarUrl { get; set; }
 
     // Navigation properties
     public Tenant Tenant { get; set; } = null!;
+    public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 }
 

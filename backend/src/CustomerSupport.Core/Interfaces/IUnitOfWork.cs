@@ -8,11 +8,12 @@ public interface IUnitOfWork : IDisposable
     // Repository properties
     ITenantRepository Tenants { get; }
     IUserRepository Users { get; }
-  IDomainRepository Domains { get; }
+    IDomainRepository Domains { get; }
     IRepository<Entities.Conversation> Conversations { get; }
     IRepository<Entities.Message> Messages { get; }
     IRepository<Entities.Document> Documents { get; }
     IRepository<Entities.DocumentChunk> DocumentChunks { get; }
+    IRefreshTokenRepository RefreshTokens { get; }
 
     /// <summary>
     /// Begins a new database transaction

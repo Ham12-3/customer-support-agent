@@ -41,9 +41,17 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
             .HasForeignKey(d => d.TenantId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        builder.HasOne(d => d.Domain)
+            .WithMany()
+            .HasForeignKey(d => d.DomainId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         // Indexes
         builder.HasIndex(d => d.TenantId)
             .HasDatabaseName("idx_documents_tenant_id");
+        
+        builder.HasIndex(d => d.DomainId)
+            .HasDatabaseName("idx_documents_domain_id");
 
         builder.HasIndex(d => d.Status)
             .HasDatabaseName("idx_documents_status");
