@@ -18,6 +18,16 @@ public interface IDomainRepository : IRepository<Domain>
     Task<Domain?> GetByApiKeyAsync(string apiKey);
 
     /// <summary>
+    /// Gets an active domain by its API key (includes related entities)
+    /// </summary>
+    Task<Domain?> GetActiveByApiKeyAsync(string apiKey, bool skipVerification = false);
+
+    /// <summary>
+    /// Validates API key and domain combination
+    /// </summary>
+    Task<bool> ValidateApiKeyAndDomainAsync(string apiKey, string domainName);
+
+    /// <summary>
     /// Returns domains pending verification that are ready for another attempt.
     /// </summary>
     Task<IEnumerable<Domain>> GetPendingVerificationAsync(int batchSize, CancellationToken cancellationToken = default);

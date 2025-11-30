@@ -60,7 +60,7 @@ public class DomainsController : ControllerBase
         var domain = new Domain
         {
             TenantId = GetTenantIdFromClaims(),
-            DomainUrl = dto.DomainUrl,
+            DomainUrl = SanitizeDomainUrl(dto.DomainUrl),
             ApiKey = GenerateApiKey(),
             VerificationCode = GenerateVerificationCode(),
             Status = DomainStatus.Pending
@@ -169,6 +169,23 @@ public class DomainsController : ControllerBase
         return $"cs-verify-{Guid.NewGuid():N}";
     }
     
+    private string SanitizeDomainUrl(string domainUrl)
+    {
+        if (string.IsNullOrWhiteSpace(domainUrl))
+            return domainUrl;
+        
+        // Remove http:// or https://
+        domainUrl = domainUrl.Replace("https://", "").Replace("http://", "");
+        
+        // Remove trailing slashes
+        domainUrl = domainUrl.TrimEnd('/');
+        
+        // Remove www. prefix (optional)
+        // domainUrl = domainUrl.Replace("www.", "");
+        
+        return domainUrl.Trim();
+    }
+    
     private string GenerateEmbedScript(Domain domain)
     {
         // Get widget URL from configuration
@@ -180,8 +197,7 @@ public class DomainsController : ControllerBase
             ?? _configuration["ApiBaseUrl"] 
             ?? "https://api.nexusai.com";
         
-        // SECURE: Embed script only contains domain URL - NO SECRETS!
-        // The widget will fetch its config from the backend using the domain
+        // SECURE: Embed script includes API key for authentication
         return $@"<!-- Customer Support AI Widget -->
 <!-- Paste this before the closing </body> tag -->
 <script>
@@ -189,6 +205,7 @@ public class DomainsController : ControllerBase
     var script = document.createElement('script');
     script.src = '{widgetUrl}/widget.js';
     script.setAttribute('data-domain', '{domain.DomainUrl}');
+    script.setAttribute('data-api-key', '{domain.ApiKey}');
     script.setAttribute('data-api-url', '{apiBaseUrl}');
     script.async = true;
     document.body.appendChild(script);
@@ -221,6 +238,7 @@ import Script from 'next/script'
         var script = document.createElement('script');
         script.src = '{widgetUrl}/widget.js';
         script.setAttribute('data-domain', '{domain.DomainUrl}');
+        script.setAttribute('data-api-key', '{domain.ApiKey}');
         script.setAttribute('data-api-url', '{apiBaseUrl}');
         script.async = true;
         document.body.appendChild(script);

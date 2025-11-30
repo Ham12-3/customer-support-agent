@@ -26,6 +26,38 @@ public class DomainRepository : Repository<Domain>, IDomainRepository
         return await _dbSet.FirstOrDefaultAsync(d => d.ApiKey == apiKey);
     }
 
+    public async Task<Domain?> GetActiveByApiKeyAsync(string apiKey, bool skipVerification = false)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+            return null;
+
+        var query = _dbSet
+            .Include(d => d.Tenant)
+            .Include(d => d.Conversations)
+            .Where(d => d.ApiKey == apiKey);
+
+        // In production, require verification
+        // In development (with skipVerification=true), allow unverified domains
+        if (!skipVerification)
+        {
+            query = query.Where(d => d.IsVerified && d.Status == DomainStatus.Verified);
+        }
+
+        return await query.FirstOrDefaultAsync();
+    }
+
+    public async Task<bool> ValidateApiKeyAndDomainAsync(string apiKey, string domainUrl)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(domainUrl))
+            return false;
+
+        return await _dbSet
+            .AnyAsync(d => d.ApiKey == apiKey && 
+                          d.DomainUrl == domainUrl && 
+                          d.IsVerified &&
+                          d.Status == DomainStatus.Verified);
+    }
+
     public async Task<IEnumerable<Domain>> GetPendingVerificationAsync(int batchSize, CancellationToken cancellationToken = default)
     {
         var now = DateTime.UtcNow;

@@ -309,7 +309,7 @@ We've simplified by:
 ```bash
 # Required
 DATABASE_URL=Host=localhost;Database=customersupport;Username=postgres;Password=postgres
-JWT_SECRET=ThisIsATemporarySecretKeyForDevelopmentPleaseChangeInProduction123!
+JWT_SECRET=your_very_strong_jwt_secret_at_least_64_characters_here
 
 # Optional (already configured with defaults)
 REDIS_URL=localhost:6379

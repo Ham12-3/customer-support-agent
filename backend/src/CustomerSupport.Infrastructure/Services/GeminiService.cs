@@ -16,13 +16,12 @@ public class GeminiService : IGeminiService
     private readonly string _apiKey;
     private readonly string _model;
 
-    public GeminiService(IConfiguration configuration)
-    {
-        _httpClient = new HttpClient();
-        _apiKey = configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API key not configured");
-        _model = configuration["Gemini:Model"] ?? "gemini-3-flash";
-    }
-
+  public GeminiService(IConfiguration configuration)
+{
+    _httpClient = new HttpClient();
+    _apiKey = configuration["Gemini:ApiKey"] ?? throw new InvalidOperationException("Gemini API key not configured");
+    _model = configuration["Gemini:Model"] ?? "gemini-3-pro-preview";
+}
     public async Task<string> GenerateResponseAsync(string prompt, string conversationHistory = "")
     {
         var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_model}:generateContent?key={_apiKey}";

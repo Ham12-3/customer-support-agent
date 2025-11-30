@@ -33,7 +33,11 @@ Log.Logger = new LoggerConfiguration()
 builder.Host.UseSerilog();
 
 // Add services to the container
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 // FluentValidation configuration
@@ -93,6 +97,16 @@ builder.Services.AddRateLimiter(options =>
             QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
             AutoReplenishment = true
         });
+    });
+
+    // Chat endpoint specific rate limiting (costs money via Gemini API)
+    options.AddFixedWindowLimiter("chat", options =>
+    {
+        options.PermitLimit = isDevelopment ? 100 : 20; // 20 messages per minute in production
+        options.Window = TimeSpan.FromMinutes(1);
+        options.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        options.QueueLimit = 0;
+        options.AutoReplenishment = true;
     });
 
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -203,6 +217,9 @@ builder.Services.AddCors(options =>
 
 // Register Unit of Work
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Register repositories
+builder.Services.AddScoped<IDomainRepository, DomainRepository>();
 
 // Register services
 builder.Services.AddScoped<ITokenService, TokenService>();

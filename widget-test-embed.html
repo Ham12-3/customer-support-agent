@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Test Page - localhost:3002</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .info-box code {
+            background: #fff;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            color: #d63384;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.ready {
+            background: #28a745;
+        }
+
+        .status-indicator.pending {
+            background: #ffc107;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .setup-steps {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .setup-steps h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .setup-steps ol {
+            margin-left: 20px;
+        }
+
+        .setup-steps li {
+            margin: 10px 0;
+            color: #856404;
+        }
+
+        .content {
+            margin: 30px 0;
+        }
+
+        .content p {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 15px;
+        }
+
+        .widget-info {
+            background: #d1ecf1;
+            border-left: 4px solid #0c5460;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .widget-info h3 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+
+        footer {
+            margin-top: 40px;
+            text-align: center;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border: 2px solid #dc3545;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #721c24;
+        }
+
+        .warning strong {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Widget Test Page</h1>
+        <p class="subtitle">Testing Customer Support Widget with Domain Authentication</p>
+
+        <div class="status">
+            <div class="status-indicator pending"></div>
+            <span><strong>Test Domain:</strong> localhost:3002</span>
+        </div>
+
+        <div class="warning">
+            <strong>⚠️ SETUP REQUIRED</strong>
+            The widget is configured but needs a valid API key to work. Follow the setup steps below!
+        </div>
+
+        <div class="setup-steps">
+            <h3>📋 Setup Steps (Do This First!)</h3>
+            <ol>
+                <li><strong>Start the Dashboard:</strong> <code>cd frontend/apps/dashboard && npm run dev</code></li>
+                <li><strong>Login to Dashboard:</strong> Go to <a href="http://localhost:3000/login" target="_blank">http://localhost:3000/login</a></li>
+                <li><strong>Add Domain:</strong> 
+                    <ul>
+                        <li>Go to Domains section</li>
+                        <li>Click "Add Domain"</li>
+                        <li>Enter: <code>localhost:3002</code></li>
+                        <li>Copy the generated <strong>API Key</strong></li>
+                    </ul>
+                </li>
+                <li><strong>Update Widget Script:</strong> Scroll down and update the embed code below with your API key</li>
+                <li><strong>Refresh this page</strong></li>
+                <li><strong>Click the chat button</strong> in the bottom-right corner!</li>
+            </ol>
+        </div>
+
+        <div class="info-box">
+            <h3>📍 Current Configuration</h3>
+            <p><strong>Test Page URL:</strong> <code>http://localhost:3002</code></p>
+            <p><strong>Widget URL:</strong> <code>http://localhost:3001</code></p>
+            <p><strong>API URL:</strong> <code>http://localhost:5000</code></p>
+            <p><strong>Domain:</strong> <code>localhost:3002</code></p>
+            <p><strong>API Key:</strong> <code id="api-key-display">Not configured yet</code></p>
+        </div>
+
+        <div class="content">
+            <h2>Welcome to the Widget Test Environment</h2>
+            <p>
+                This page simulates a customer website embedding your AI support widget.
+                It's running on <strong>localhost:3002</strong> to test the complete authentication flow.
+            </p>
+            <p>
+                The widget in the bottom-right corner will authenticate using the domain 
+                (<code>localhost:3002</code>) and the API key you configure below.
+            </p>
+            <p>
+                Try clicking the widget and sending a message. If everything is configured correctly,
+                you'll get an AI-powered response from your backend!
+            </p>
+        </div>
+
+        <div class="widget-info">
+            <h3>🔧 How to Update the API Key</h3>
+            <p>After you get your API key from the dashboard, update line 13 of this HTML file:</p>
+            <p><code>const apiKey = 'YOUR_API_KEY_HERE';</code></p>
+            <p>Replace <code>YOUR_API_KEY_HERE</code> with the actual API key, then refresh this page.</p>
+        </div>
+
+        <footer>
+            <p>Customer Support AI Platform - Widget Test Environment</p>
+            <p>Running on localhost:3002 • Backend: localhost:5000</p>
+        </footer>
+    </div>
+
+</body>
+</html>
+
